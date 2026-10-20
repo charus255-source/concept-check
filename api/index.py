@@ -2,6 +2,7 @@ import json
 import os
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from groq import Groq
@@ -14,6 +15,56 @@ load_dotenv()
 
 # Create FastAPI application
 app = FastAPI()
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <html>
+    <head>
+        <title>Concept Check</title>
+    </head>
+    <body>
+        <h1>Concept Check</h1>
+
+        <textarea id="explanation" rows="8" cols="70"
+        placeholder="Explain the concept in your own words"></textarea>
+
+        <br><br>
+
+        <button onclick="checkConcept()">Submit</button>
+
+        <h3>Recited sentence</h3>
+        <p id="recited"></p>
+
+        <h3>Follow-up question</h3>
+        <p id="followup"></p>
+
+        <script>
+            async function checkConcept() {
+                const explanation =
+                    document.getElementById("explanation").value;
+
+                const response = await fetch("/api/check", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        explanation: explanation
+                    })
+                });
+
+                const result = await response.json();
+
+                document.getElementById("recited").innerText =
+                    result.recited_sentence || "No recited sentence";
+
+                document.getElementById("followup").innerText =
+                    result.follow_up_question || "No follow-up question";
+            }
+        </script>
+    </body>
+    </html>
+    """
 
 
 # Create Groq client using the secret key from .env
