@@ -2,8 +2,7 @@ import gradio as gr
 import requests
 
 
-BACKEND_URL = "http://127.0.0.1:8000/api/check"
-
+BACKEND_URL = "https://concept-check-kappa.vercel.app/api/check"
 
 def check_concept(explanation):
 

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from groq import Groq
+from supabase import create_client
 
 
 # Load values from .env
@@ -16,6 +17,14 @@ app = FastAPI()
 
 
 # Create Groq client using the secret key from .env
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_KEY
+)
 client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
@@ -63,8 +72,27 @@ Return ONLY valid JSON in this exact shape:
     content = response.choices[0].message.content
 
     result = json.loads(content)
+    attempt_response = (
+        supabase
+        .table("attempts")
+        .insert({
+            "learner_id": 1,
+            "idea_id": 1,
+            "attempt_type": "initial",
+            "response_text": explanation,
+            "result": "pending"
+        })
+        .execute()
+    )
 
+    attempt_id = attempt_response.data[0]["attempt_id"]
+    supabase.table("recited_sentences").insert({
+    "attempt_id": attempt_id,
+    "recited_sentence": result["recited_sentence"],
+    "followup_question": result["follow_up_question"]
+}).execute()
     return result
+   
 
 
 # Concept Check API endpoint
