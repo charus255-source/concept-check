@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f7fc">
+  <meta name="description" content="Go beyond the definition. Explain a concept, explore a follow-up, and build your understanding.">
+  <title>Concept Check · Think it through</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%237756dc'/%3E%3Cpath d='m11 21 6 6 13-15' fill='none' stroke='white' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/chat.js" defer></script>
+</head>
+<body>
+<svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 11.5a7.8 7.8 0 0 1-8 7.5 9 9 0 0 1-3-.5L4 20l1.5-4.5A7 7 0 0 1 4 11.5a8 8 0 0 1 16 0Z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></symbol>
+</svg>
+<button class="overlay" id="overlay" aria-label="Close navigation" hidden></button>
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+  <a class="brand" href="/" aria-label="Concept Check home"><span class="brand-mark"><svg><use href="#i-check"/></svg></span><span>concept<span class="brand-light">check</span><span class="brand-dot">.</span></span></a>
+  <div class="workspace-label">YOUR LEARNING SPACE</div>
+  <button class="new-chat" id="new-chat"><svg><use href="#i-plus"/></svg>New conversation<span class="shortcut" aria-hidden="true">↗</span></button>
+  <div class="nav-current"><svg><use href="#i-chat"/></svg>Concept practice<span class="small-dot"></span></div>
+  <div class="history-heading">YOUR CONCEPTS <span id="history-count">0</span></div>
+  <nav id="history-nav" class="history-nav" aria-label="Previous conversations"><p class="empty-history">A little curiosity goes a long way.<br>Your conversations will appear here.</p></nav>
+  <div class="sidebar-bottom">
+    <div class="learning-note"><span class="note-icon"><svg><use href="#i-spark"/></svg></span><strong>Understanding > memorizing</strong><p>You don’t need the perfect words.<br>Just start with your own.</p></div>
+    <div class="learner-profile"><span class="avatar">Y</span><div><strong>Your learning journey</strong><small>Module 02 · Foundations</small></div><span class="profile-dot"></span></div>
+  </div>
+</aside>
+<main>
+  <header class="topbar"><div class="breadcrumb"><button id="menu" class="icon-button mobile-menu" aria-label="Open navigation" aria-expanded="false"><svg><use href="#i-menu"/></svg></button><span class="breadcrumb-home">Learning space</span><svg><use href="#i-chevron"/></svg><strong>Concept practice</strong></div><div class="header-actions"><span class="module-badge">MODULE 02</span><button class="icon-button" id="export" title="Download conversation" aria-label="Download conversation"><svg><use href="#i-download"/></svg></button></div></header>
+  <section class="chat-area" id="chat-area" aria-label="Concept practice chat">
+    <div class="welcome" id="welcome">
+      <div class="welcome-symbol"><svg><use href="#i-spark"/></svg><span class="orbit orbit-one">+</span><span class="orbit orbit-two">✧</span></div>
+      <div class="eyebrow">LESS RECITING. MORE REASONING.</div>
+      <h1>Let’s think it through<span>.</span></h1>
+      <p class="intro">You know the words. Let’s explore the <em>why.</em><br>Pick a concept and explain it like you would to a friend.</p>
+      <div class="topic-heading"><svg><use href="#i-book"/></svg><span>A little inspiration to get you started</span></div>
+      <div class="topic-grid" id="topic-grid">
+        <button class="topic-card" data-idea="BACKEND_PURPOSE"><span class="topic-icon peach">⌘</span><strong>Behind the browser</strong><span>Why does a backend exist?</span><svg><use href="#i-chevron"/></svg></button>
+        <button class="topic-card" data-idea="API_REQUEST"><span class="topic-icon blue">↔</span><strong>A request’s journey</strong><span>What does an API call carry?</span><svg><use href="#i-chevron"/></svg></button>
+        <button class="topic-card" data-idea="API_AUTH"><span class="topic-icon lavender"><svg><use href="#i-lock"/></svg></span><strong>Keep it secret</strong><span>Why can’t keys live in the browser?</span><svg><use href="#i-chevron"/></svg></button>
+        <button class="topic-card" data-idea="PERSISTENCE"><span class="topic-icon mint">▤</span><strong>Make it remember</strong><span>How does an app remember?</span><svg><use href="#i-chevron"/></svg></button>
+      </div>
+      <p class="welcome-footnote">No multiple choice. Just your thinking.</p>
+      <button class="assessment-button" id="baseline-case" type="button">Try a case before practicing</button>
+    </div>
+    <div id="messages" class="messages" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions"></div>
+    <div class="assessment-actions" id="assessment-actions" hidden><button class="assessment-button" id="fresh-case" type="button">Try a fresh case</button><span>Python checks your answer against the predefined rules.</span></div>
+  </section>
+  <div class="composer-dock">
+    <div class="flow" aria-label="Learning steps"><span class="flow-step active" id="step-explain"><b>1</b> Explain</span><i></i><span class="flow-step" id="step-reflect"><b>2</b> Reflect</span><i></i><span class="flow-step" id="step-retry"><b>3</b> Try again</span></div>
+    <div class="error-banner" id="error" role="alert" hidden><span id="error-text"></span><button id="dismiss-error" aria-label="Dismiss error">×</button></div>
+    <form id="chat-form" class="composer">
+      <div class="composer-top"><span class="concept-label"><span class="small-dot"></span>LET’S EXPLORE</span><label class="sr-only" for="concept">Choose a concept</label><select id="concept" name="concept"><option value="API_AUTH">Why must private keys stay off the browser?</option></select></div>
+      <label class="sr-only" for="explanation">Your explanation</label><textarea id="explanation" name="explanation" rows="2" maxlength="6000" placeholder="I think the key can’t live in the browser because…" required></textarea>
+      <div class="composer-bottom"><span class="composer-hint" id="composer-hint">Your own words are the best place to start.</span><div class="send-controls"><span class="character-count" id="character-count">0 / 6,000</span><button class="send-button" type="submit" id="send" aria-label="Send explanation"><svg><use href="#i-arrow"/></svg></button></div></div>
+    </form>
+    <div class="footer-note"><svg><use href="#i-lock"/></svg><span>Your practice stays in your browser session’s private history.</span><span class="keyboard-note">Enter to send · Shift + Enter for a new line</span></div>
+  </div>
+</main>
+</body>
+</html>

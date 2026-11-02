@@ -1,0 +1,122 @@
+[
+  {
+    "case_id": 1,
+    "idea_id": "BACKEND_PURPOSE",
+    "case_question": "A company changes its discount rules every week. A developer puts the rules only in browser JavaScript. What problems could arise, and how could a backend help?",
+    "case_answer": "Browser code can be inspected and changed by users. A backend can centralize business rules, apply them consistently, and allow updates without relying on each browser."
+  },
+  {
+    "case_id": 2,
+    "idea_id": "API_REQUEST",
+    "case_question": "A mobile app requests order 4821, but the server reports that the order ID is missing. What information should the request carry?",
+    "case_answer": "The request must identify the intended operation and provide the order identifier, for example in the URL path or a parameter. Headers and a body may also be needed depending on the API."
+  },
+  {
+    "case_id": 3,
+    "idea_id": "API_AUTH",
+    "case_question": "A developer places a private API key in JavaScript delivered to every website visitor. What could go wrong, and how should the app be redesigned?",
+    "case_answer": "Visitors can inspect browser-delivered code and extract the key. The browser should call the application backend, which keeps the secret securely on the server and makes the authorized API request."
+  },
+  {
+    "case_id": 4,
+    "idea_id": "PERSISTENCE",
+    "case_question": "A learner completes three questions in an app. After refreshing the page, all progress disappears. Why might this happen, and how can progress be retained?",
+    "case_answer": "Temporary application state may be lost on refresh or process restart. Progress that must persist should be saved in durable storage such as a database and retrieved when needed."
+  },
+  {
+    "case_id": 5,
+    "idea_id": "FOREIGN_KEY_MANY_SIDE",
+    "case_question": "One learner has twelve attempts. A developer stores all twelve attempt IDs in a single learner record. What database design would make the relationship easier to query?",
+    "case_answer": "Store learners in one table and attempts in another. Each attempt should contain a learner_id foreign key referencing the learner, representing one learner with many attempts."
+  },
+  {
+    "case_id": 6,
+    "idea_id": "EVENT_ROWS",
+    "case_question": "An app stores every learner response in one long, comma-separated database cell. The team needs to find failed attempts from last week. What is the problem with this design?",
+    "case_answer": "Combining multiple attempts in one cell makes individual events difficult to filter, update, and relate. Store each attempt as a separate row with fields such as learner ID, case ID, result, and timestamp."
+  },
+  {
+    "case_id": 7,
+    "idea_id": "DATA_LOCATION",
+    "case_question": "A learning app has a fixed list of supported concepts, private API credentials, saved learner attempts, and a temporary loading message. Where should each live?",
+    "case_answer": "The fixed concept list can live in code; secrets belong in server-side environment configuration or a secrets manager; learner attempts belong in durable database storage; and the loading message belongs in temporary UI state."
+  },
+  {
+    "case_id": 8,
+    "idea_id": "HTTP_RESPONSE",
+    "case_question": "A client sends a POST request to save a learner attempt. The server saves it, but the client cannot tell whether it succeeded. What should the API return?",
+    "case_answer": "The API should return an appropriate HTTP status code and, when useful, a response body describing the result or created record. The client should also handle error responses."
+  },
+  {
+    "case_id": 9,
+    "idea_id": "REFERENTIAL_INTEGRITY",
+    "case_question": "An attempts table contains learner_id 99, but no learner with ID 99 exists. What database rule could prevent this inconsistency?",
+    "case_answer": "A foreign key from attempts.learner_id to learners.id can prevent an attempt from referencing a nonexistent learner."
+  },
+  {
+    "case_id": 10,
+    "idea_id": "RETRY_GAP",
+    "case_question": "A learner struggles with an explanation, receives a follow-up question, and then tries a new case. The database stores the retry but does not connect it to the original difficulty. What is missing?",
+    "case_answer": "The retry attempt should reference the gap it is intended to address. This links the original difficulty, follow-up question, and subsequent result so the app can evaluate whether the gap was addressed."
+  },
+  {
+    "case_id": 11,
+    "idea_id": "BACKEND_PURPOSE",
+    "case_question": "A shopping app lets users change the price displayed in their browser. How should the system ensure the final price is legitimate?",
+    "case_answer": "The backend should calculate or validate the authoritative price using trusted business rules rather than trusting a value supplied by the browser."
+  },
+  {
+    "case_id": 12,
+    "idea_id": "API_REQUEST",
+    "case_question": "An app needs to retrieve order 729 instead of order 4821. What should change in the API request?",
+    "case_answer": "The request should identify order 729, for example by changing the order ID in the URL path or the appropriate request parameter."
+  },
+  {
+    "case_id": 13,
+    "idea_id": "API_AUTH",
+    "case_question": "A website needs to call a private third-party API. How can it do so without exposing its private key to visitors?",
+    "case_answer": "The website should send the request through its backend, which securely stores the key and makes the authorized third-party API call."
+  },
+  {
+    "case_id": 14,
+    "idea_id": "PERSISTENCE",
+    "case_question": "A learner closes an app and opens it the next day. Their previous attempts should still be available. What should the app do?",
+    "case_answer": "Save the attempts in durable storage, such as a database, and retrieve them when the learner returns."
+  },
+  {
+    "case_id": 15,
+    "idea_id": "FOREIGN_KEY_MANY_SIDE",
+    "case_question": "A learner makes five attempts at one case. How can the database represent these attempts without storing five attempt IDs in the learner row?",
+    "case_answer": "Store each attempt as a separate row with a learner_id foreign key referencing the learner."
+  },
+  {
+    "case_id": 16,
+    "idea_id": "EVENT_ROWS",
+    "case_question": "An analyst needs to count failed attempts made on Monday. Why is storing all attempts in one comma-separated cell problematic?",
+    "case_answer": "Each attempt should be stored as its own row so it can be filtered, counted, and analyzed independently."
+  },
+  {
+    "case_id": 17,
+    "idea_id": "DATA_LOCATION",
+    "case_question": "An app needs to remember a learner’s submitted answer after a server restart. Should it rely only on a temporary variable? Explain.",
+    "case_answer": "No. It should save the answer in durable storage such as a database if it must survive a restart."
+  },
+  {
+    "case_id": 18,
+    "idea_id": "HTTP_RESPONSE",
+    "case_question": "An API successfully creates a new attempt. How can it tell the client that the attempt was created successfully?",
+    "case_answer": "Return an appropriate success status code, such as HTTP 201 Created, and optionally the created resource or its identifier."
+  },
+  {
+    "case_id": 19,
+    "idea_id": "REFERENTIAL_INTEGRITY",
+    "case_question": "An attempt is submitted with learner_id 99, but learner 99 does not exist. What should prevent this invalid relationship from being stored?",
+    "case_answer": "A foreign key constraint referencing learners.id should reject the attempt if the referenced learner does not exist."
+  },
+  {
+    "case_id": 20,
+    "idea_id": "RETRY_GAP",
+    "case_question": "A learner answers a fresh case incorrectly, receives a follow-up, and then answers another case. How can the database show which difficulty the follow-up was intended to address?",
+    "case_answer": "Store the gap as a record and link the follow-up and retry attempt to that gap, preserving the relationship between the original difficulty and the retry."
+  }
+]
