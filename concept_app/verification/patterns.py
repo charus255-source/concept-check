@@ -59,13 +59,19 @@ define("browser_backend",
        rf"{B}{G}{ACT(r'(?:call|calls|send|sends|route|routes)')}{G}{S}",
        rf"(?:website|page|frontend){G}{ACT(r'(?:send|sends|route|routes)')}{G}request{G}{S}",
        rf"(?:website|page){G}{ACT(r'(?:call|calls)')}{G}{S}",
-       rf"{ACT(r'(?:route|send|proxy)')}{G}(?:request|call){G}(?:through|via|to){G}{S}")
+       rf"{ACT(r'(?:route|send|proxy)')}{G}(?:request|call){G}(?:through|via|to){G}{S}",
+       rf"{B}\s+(?:(?:should|must|can)\s+)?{ACT(r'(?:talk|talks|communicate|communicates)')}\s+(?:to|with)\s+(?:the |our |its )?{S}",
+       rf"requests?\s+from\s+(?:the )?{B}\s+(?:(?:should|must)\s+)?{ACT(r'(?:go|goes|pass|passes)')}\s+(?:through|via|to)\s+(?:the |our )?{S}")
 define("server_key",
        rf"{S}{G}{ACT(SAVE)}{G}{K}",
        rf"{ACT(SAVE)}{G}{K}{G}(?:on|in|at){G}{S}",
-       rf"{K}{G}(?:belongs?|lives?|stays?){G}(?:server|server-side)")
+       rf"{K}{G}(?:belongs?|lives?|stays?){G}(?:server|server-side)",
+       rf"{ACT(SAVE)}\s+(?:the |our )?{K}\s+(?:(?:only|exclusively)\s+)?server-side",
+       rf"{K}\s+(?:(?:must|should)\s+)?{ACT(r'(?:remain|remains|stay|stays)')}\s+(?:(?:only|exclusively)\s+)?(?:server-side|on\s+(?:the |our )?{S})")
 define("server_call",
-       rf"{S}{G}{ACT(r'(?:make|makes|call|calls|contact|contacts|perform|performs)')}{G}(?:authorized|third-party|third party|provider|api)")
+       rf"{S}{G}{ACT(r'(?:make|makes|call|calls|contact|contacts|perform|performs)')}{G}(?:authorized|third-party|third party|provider|api)",
+       rf"{S}\s+(?:(?:should|must|can|will)\s+)?{ACT(r'(?:send|sends|forward|forwards|relay|relays|proxy|proxies)')}\s+(?:the |an? )?(?:request|call)\s+to\s+(?:the )?(?:third-party api|third party api|provider(?: api)?)",
+       rf"(?:third-party api|third party api|provider api)\s+(?:is\s+|(?:must|should)\s+be\s+){ACT(r'(?:called|contacted)')}\s+by\s+(?:the |our )?{S}")
 define("temporary_loss",
        rf"(?:temporary|in-memory|memory){G}(?:state|progress|data|variable)?{G}{ACT(r'(?:lost|disappear|disappears|vanish|vanishes|cleared)')}{G}(?:refresh|reload|restart)",
        rf"(?:refresh|reload|restart){G}{ACT(r'(?:lose|loses|clear|clears|discard|discards)')}{G}(?:temporary|memory|progress|state)")
@@ -159,7 +165,10 @@ define("followup_gap",
 define("bad_key_browser",
        rf"{ACT(SAVE)}{G}{K}{G}(?:in|on|to){G}(?:browser|frontend|front end|client-side code)",
        rf"{ACT(r'put')}{G}{K}{G}(?:in|on){G}(?:browser|frontend|front end|client-side code)",
-       rf"{ACT(r'(?:send|ship|deliver|expose)')}{G}(?:private |api )?key{G}(?:visitors?|browser)")
+       rf"{ACT(r'(?:send|ship|deliver|expose)')}{G}(?:private |api )?key{G}(?:visitors?|browser)",
+       rf"{ACT(r'(?:hide|embed)')}\s+(?:the )?{K}\s+in\s+(?:the )?{B}(?:\s+javascript|\s+code)?",
+       rf"{B}\s+{ACT(r'(?:call|calls)')}\s+(?:the )?(?:third-party|third party|provider)\s+api\s+(?:using|with)\s+(?:the )?{K}",
+       rf"{ACT(r'call')}\s+(?:the )?(?:third-party|third party|provider)\s+api\s+from\s+(?:the )?{B}\s+(?:using|with)\s+(?:the )?{K}")
 define("bad_browser_trust",
        rf"{ACT(r'(?:trust|accept|use)')}{G}(?:browser-supplied|browser supplied|customer-modified){G}(?:price|total|discount)",
        rf"browser(?:-only)? (?:rules|code|price){G}{ACT(r'(?:is|are)')}{G}(?:authoritative|tamper-proof|trusted)")
