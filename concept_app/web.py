@@ -20,6 +20,7 @@ from concept_app.catalog import IDEAS
 from concept_app.config import Settings
 from concept_app.probing import ProbingUnavailable, probe
 from concept_app.catalog import public_case
+from concept_app.quoting import assisted_verify
 from concept_app.verification import verify, validate_source, VerificationUnavailable
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -340,6 +341,20 @@ def assessment_case(payload: CaseRequest, request: Request, response: Response):
             "phase": "after" if payload.gap_id is not None else "before"}
 
 
+def result_message(result):
+    """Learner-facing wording: say how far the answer got, never just 'wrong'."""
+    covered, total = result["covered"], result["total"]
+    ideas = "idea" if total == 1 else "ideas"
+    if result["status"] == "PASS":
+        return f"PASS — you covered all {total} {ideas} for this case."
+    if covered == total:
+        return (f"Not yet — you covered all {total} {ideas}, "
+                "but part of your answer gives advice that conflicts with them.")
+    if covered == 0:
+        return f"Not yet — none of the {total} {ideas} for this case were found in your answer."
+    return f"Not yet — {covered} of {total} {ideas} covered. You are part of the way there."
+
+
 class AssessmentRequest(BaseModel):
     challenge: str = Field(min_length=1, max_length=8192)
     answer: str = Field(min_length=1, max_length=6000)
@@ -377,11 +392,10 @@ def assessment_answer(payload: AssessmentRequest, request: Request, response: Re
     if seen:
         raise HTTPException(409, "This case has already been answered. Request another unseen case.")
     # This guards sequential replay. Cross-instance atomic reservation needs DB support.
-    result = verify(case, payload.answer)
+    result = assisted_verify(settings, case, payload.answer)
     saved = database(settings, "POST", "attempts", data={
         "learner_id": identity, "case_id": case["case_id"], "gap_id": gap_id,
         "learner_response": payload.answer, "passed": result["status"] == "PASS",
     })
     return {**result, "attempt_id": saved[0]["id"], "gap_id": gap_id,
-            "message": "PASS — the documented case checks were met." if result["status"] == "PASS" else
-            "WRONG — the documented checks were not all met, or the answer contained conflicting advice."}
+            "message": result_message(result)}

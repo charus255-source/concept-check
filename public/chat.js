@@ -151,7 +151,7 @@ function selectIdea(id, restore = false) {
       }
       message('user', row.learner_response);
       if (typeof row.passed === 'boolean') {
-        message('assistant', row.passed ? 'PASS — the documented case checks were met.' : 'WRONG — the documented checks were not all met, or the answer contained conflicting advice.');
+        message('assistant', row.passed ? 'PASS — the documented case checks were met.' : 'Not yet — the documented checks were not all met, or the answer contained conflicting advice.');
         state.gap = null;
         state.assessmentGap = null;
       } else if (row.probe) {
@@ -227,7 +227,7 @@ async function requestAssessment(gapId) {
     message('assistant', (result.phase === 'before' ? 'Before you practice, try this case:\n\n' : 'Apply your reasoning to this different case:\n\n') + result.case_question);
     $('explanation').value = '';
     $('explanation').placeholder = 'Work through this case in your own words…';
-    $('composer-hint').textContent = 'Python will apply the predefined case checks. Groq does not grade.';
+    $('composer-hint').textContent = 'Python decides the result. The AI may only point to sentences in your answer.';
     $('explanation').dispatchEvent(new Event('input'));
     scrollToLatest();
   } catch (error) {
@@ -294,8 +294,8 @@ $('chat-form').addEventListener('submit', async event => {
       state.assessment = null;
       const missing = result.checks.filter(check => !check.met).map(check => '• ' + check.feedback);
       if (result.contradictions.length) missing.push('• Your answer also contains conflicting advice.');
-      message('assistant', result.message + (missing.length ? '\n\n' + missing.join('\n') : '') +
-        '\n\nThis result reflects the documented text checks; they may miss valid paraphrases.');
+      message('assistant', result.message + (missing.length ? '\n\nStill to cover:\n' + missing.join('\n') : '') +
+        '\n\nPython decides this result from the documented checks. It can still miss a valid answer in unusual wording.');
       message('assistant', assessing.phase === 'before'
         ? 'Now explain the concept in your own words. We’ll explore one follow-up before a different case.'
         : 'Your case answer and its result are saved. You can explore another concept.');

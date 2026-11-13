@@ -14,7 +14,7 @@ GOLDEN_PAIRS = {row["case_id"]: row for row in json.loads(
 
 
 class VerificationUnavailable(ValueError):
-    """A source/rule error, never a learner's WRONG result."""
+    """A source/rule error, never a learner's NOT_YET result."""
 
 
 def fingerprint(case):
@@ -51,5 +51,7 @@ def verify(case, answer):
                       for name in rule.contradictions if facts[name]]
     passed = all(check["met"] for check in checks) and not contradictions
     return {"case_id": case_id, "rule_version": VERSION, "source_fingerprint": source_fingerprint,
-            "status": "PASS" if passed else "WRONG", "checks": checks,
+            "status": "PASS" if passed else "NOT_YET",
+            "covered": sum(check["met"] for check in checks), "total": len(checks),
+            "checks": checks,
             "contradictions": contradictions}

@@ -1,4 +1,34 @@
-# Deterministic verification implementation
+# Verification implementation
+
+## Version 1.1.0: quote-assisted checking
+
+A review found the phrase rules alone rejected most correct answers written in a
+learner's own words. Measured on 40 held-out correct answers, the rules alone
+pass 4. So grading now has two steps:
+
+1. `verification/engine.py` runs the phrase rules, as before. If they pass the
+   answer, or find a contradiction, that is final and no model is called.
+2. Otherwise `concept_app/quoting.py` asks the Groq model for one exact quote from
+   the learner's answer per unmet check. Python accepts a quote only if it is in
+   the answer word for word, is not negated, quoted, a question or hypothetical,
+   and mentions the subject of the check. Python then assigns PASS or NOT_YET.
+
+What is still true: the answer key and checks are written before the session, the
+model never returns a grade, a contradiction found by the rules cannot be lifted,
+and a model failure leaves the rules-only result (never a PASS).
+
+What is no longer true: "no model takes part in a grade". The model decides
+whether a quoted sentence means the required idea; Python can only veto. With a
+deliberately careless stand-in model, Python's vetoes alone stop 60 of 61 authored
+wrong answers (`python scripts/evaluate_checker.py --worst-case`). The real rate
+must be measured with the live model: `python scripts/evaluate_checker.py`.
+
+Other 1.1.0 changes: results report `covered` and `total`; the learner-facing
+wording is "Not yet — 2 of 3 ideas covered" instead of WRONG; case 5 accepts one
+row per attempt with a learner foreign key; case 20 no longer requires a fourth
+check that restated the other three.
+
+The sections below describe the rules-only engine.
 
 Implementation and regression testing use mocked providers and make no database
 writes. Publishing this implementation does not require database migrations or
@@ -12,8 +42,8 @@ read-only into the server-only
   contradictions using the finite relation templates in `patterns.py` and the
   required checks in `rules.py`. No model or network call participates in a grade.
 * All required checks plus no recognized contradictions gives PASS. Otherwise the
-  valid answer gets WRONG. Source drift, authorization errors, malformed requests,
-  and unavailable infrastructure do not become WRONG.
+  valid answer gets NOT_YET. Source drift, authorization errors, malformed requests,
+  and unavailable infrastructure do not become NOT_YET.
 * API responses include stable check IDs, exact original evidence spans, rule
   version `1.0.2`, and the authoritative source fingerprint. Expected answers stay
   on the server. The existing attempts table stores the boolean grade; it has no
@@ -62,7 +92,7 @@ The matcher recognizes explicit English phrase families and bounded relations.
 It is not a complete parser or a proof of understanding. Correct unfamiliar
 paraphrases, long-distance pronouns, indirect/hypothetical constructions, and
 complex negation may be rejected; unrecognized contradictions may be missed.
-The UI explains that WRONG means the documented text checks were not met, and
+The UI explains that NOT_YET means the documented text checks were not met, and
 that valid paraphrases may be missed. Do not describe these rules as general
 semantic understanding or claim an accuracy score without observed learner data.
 

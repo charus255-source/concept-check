@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-VERSION = "1.0.2"
+VERSION = "1.1.0"
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ RULES = {
     4: rule([("temporary_loss", "Explain loss of temporary state on refresh or restart."),
              ("save_durable", "Describe saving progress in durable storage."),
              ("retrieve_saved", "Describe retrieving the saved progress.")], ["bad_temp"]),
-    5: rule([("separate_entities", "Represent learners and attempts in separate tables."),
+    5: rule([("separate_entities", "Give attempts their own table or rows, separate from the learner record."),
              ("attempt_learner", "Show each attempt pointing to its learner.")], ["bad_fk_direction"]),
     6: rule([("combined_problem", "Explain a query or relationship problem with combined events."),
              ("each_attempt_row", "Store every attempt as its own row.")], ["bad_event_cell"]),
@@ -69,6 +69,5 @@ RULES = {
               ("reject_orphan", "Explain database rejection when the referenced learner is absent.")], ["bad_orphan", "bad_fk_direction"]),
     20: rule([("gap_record", "Store the difficulty as a gap record."),
               ("retry_gap", "Link the retry attempt to that gap."),
-              ("followup_gap", "Link the follow-up to the same gap."),
-              ("trace_gap", "Preserve the original-difficulty-to-retry relationship.")], ["bad_gap"]),
+              ("followup_gap", "Link the follow-up to the same gap.")], ["bad_gap"]),
 }

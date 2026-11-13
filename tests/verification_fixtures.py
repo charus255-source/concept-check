@@ -108,3 +108,97 @@ CONTRADICTION = {
  19: "Accept attempts for nonexistent learners.",
  20: "Link the retry to an unrelated gap.",
 }
+
+# Everyday-language answers added in rule version 1.1.0. Each NATURAL answer was a
+# correct answer that the 1.0.2 rules rejected (35 of 40) or accepted (5 of 40).
+# They were written by a reviewer, not collected from learners.
+NATURAL = {
+ 1: [
+  "Anyone can open dev tools and edit the discount rules, so customers could give themselves any discount. Put the rules on the server so there is one trusted copy and you update it in one place.",
+  "Users can see and tamper with JavaScript in the browser. The backend should hold the discount logic so it is the same for everyone and can be changed weekly without each browser needing new code."],
+ 2: [
+  "The request needs to include the order ID 4821, for example in the URL like /orders/4821, so the server knows which order to fetch.",
+  "It should carry the method (GET) and the order id, either in the path or as a query parameter."],
+ 3: [
+  "Anyone can open dev tools and steal the key, then use it and run up your bill. Move the key to the server; the frontend calls your backend and the backend calls the API with the key.",
+  "The key is visible to every visitor in the page source. Keep the key in a server environment variable and have the browser call your own server, which then makes the real API call."],
+ 4: [
+  "Progress vanishes because it only lived in a variable. Persist it in a database and read it back later.",
+  "The progress was only kept in memory in the browser, so a refresh wipes it. Save it to a database and load it again when the page opens."],
+ 5: [
+  "Create one row per attempt with a foreign key to the learner.",
+  "Make a separate attempts table. Each attempt row has a learner_id column pointing to the learners table."],
+ 6: [
+  "You can't filter or count individual attempts when they are all squashed into one cell. Each attempt should be its own row with a date and result.",
+  "Finding last week's failed attempts means parsing a big string. Put one attempt per row so you can query by date and result."],
+ 7: [
+  "Concept list in the code, API credentials in environment variables on the server, attempts in the database, loading message in the UI state in the browser.",
+  "The fixed list can be hardcoded. The keys go in server env vars. Attempts are saved in the database. The loading message is just temporary frontend state."],
+ 8: [
+  "It should return a status code like 201 so the client knows it worked, and an error code if it failed so the client can handle that.",
+  "Return a 201 Created with the saved attempt in the body. If saving fails return an error status and the client should check for it."],
+ 9: [
+  "A foreign key constraint on attempts.learner_id referencing learners.id. The database will then refuse to insert an attempt for a learner that doesn't exist.",
+  "Make learner_id a foreign key to the learners table, so you can't add an attempt for learner 99 unless learner 99 exists."],
+ 10: [
+  "The retry row needs a gap_id that points to the gap it is trying to fix. Then you can see whether the retry fixed that difficulty.",
+  "A link between the retry and the original gap is missing. Add a foreign key from the retry attempt to the gap so you can trace difficulty to result."],
+ 11: [
+  "Never trust the price sent by the browser. The server should look up the real price itself and calculate the total.",
+  "The backend must recalculate the price from its own database and ignore whatever price the client sends."],
+ 12: [
+  "Change the order ID in the URL from 4821 to 729.",
+  "The path changes to /orders/729. Everything else stays the same."],
+ 13: [
+  "The website calls its own backend, the key is kept on the server, and the backend calls the third-party API.",
+  "Use the server as a proxy: the frontend sends the request to your server, which adds the secret key and forwards it to the provider."],
+ 14: [
+  "Save the attempts to a database and load them when the learner comes back.",
+  "Write each attempt to the database when it happens, then fetch them from the database next time the app opens."],
+ 15: [
+  "One row per attempt in an attempts table, each with a learner_id column.",
+  "Create five rows in the attempts table. Each row has learner_id as a foreign key back to the learner."],
+ 16: [
+  "You'd have to split the string to count anything. If every attempt is its own row you can just filter by day and result and count them.",
+  "Because SQL can't filter inside one cell easily. Separate rows let you count failed attempts on Monday with a simple query."],
+ 17: [
+  "No, a variable is wiped when the server restarts. Save the answer in a database so it is still there afterwards.",
+  "No. Variables live in memory and memory is cleared on restart. It has to be written to the database."],
+ 18: [
+  "Return a 201 Created status.",
+  "Respond with status code 201 and the new attempt's id."],
+ 19: [
+  "A foreign key on learner_id that references learners.id. The database rejects the insert because learner 99 isn't there.",
+  "A foreign key constraint. The DB will throw an error if the learner does not exist."],
+ 20: [
+  "Create a gaps table. The follow-up and the retry attempt both store the gap_id, so you can see which difficulty each one was about.",
+  "Save the difficulty as its own gap row, then give the follow-up and the retry a foreign key to that gap."],
+}
+
+# Clearly wrong answers that must never pass.
+NATURAL_WRONG = {
+ 3: [
+  "Just hide the key by minifying the JavaScript so nobody can read it.",
+  "It is fine, nobody looks at page source."],
+ 4: [
+  "The internet was slow. Tell the learner not to refresh.",
+  "Keep progress in a variable, it will be there after refresh."],
+ 5: [
+  "Add twelve columns attempt1 to attempt12 on the learner.",
+  "Store the IDs as a comma list in the learner row."],
+ 11: [
+  "Hide the price field with CSS so users can't change it.",
+  "Trust the price the browser sends, it is faster."],
+ 12: [
+  "Keep the URL and change the label to 729.",
+  "Change the order ID in the URL to 730."],
+ 14: [
+  "Keep them in a variable.",
+  "Ask the learner to write them down."],
+ 17: [
+  "Yes, variables are fine.",
+  "Yes, a temporary variable will survive a restart."],
+ 18: [
+  "Return nothing.",
+  "Return 500."],
+}

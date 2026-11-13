@@ -163,8 +163,8 @@ define("followup_gap",
 
 # Recognized contradictions are independently matched, including appended bad advice.
 define("bad_key_browser",
-       rf"{ACT(SAVE)}{G}{K}{G}(?:in|on|to){G}(?:browser|frontend|front end|client-side code)",
-       rf"{ACT(r'put')}{G}{K}{G}(?:in|on){G}(?:browser|frontend|front end|client-side code)",
+       rf"{ACT(SAVE)}{G}{K}{G}(?:in|on|to) (?:the |our |a |every |each )?(?:browser|frontend|front end|client-side code)",
+       rf"{ACT(r'put')}{G}{K}{G}(?:in|on) (?:the |our |a |every |each )?(?:browser|frontend|front end|client-side code)",
        rf"{ACT(r'(?:send|ship|deliver|expose)')}{G}(?:private |api )?key{G}(?:visitors?|browser)",
        rf"{ACT(r'(?:hide|embed)')}\s+(?:the )?{K}\s+in\s+(?:the )?{B}(?:\s+javascript|\s+code)?",
        rf"{B}\s+{ACT(r'(?:call|calls)')}\s+(?:the )?(?:third-party|third party|provider)\s+api\s+(?:using|with)\s+(?:the )?{K}",
@@ -196,6 +196,159 @@ define("bad_729",
        rf"{ACT(r'(?:change|update)')}{G}only{G}(?:displayed label|label)",
        rf"{ACT(r'(?:change|replace|set|switch)')}{G}(?:order id|order identifier|requested order){G}(?:to|with) (?!729\b)\d+\b")
 define("bad_body_required", rf"every request{G}(?:must|always){G}{ACT(r'(?:have|include|contain)')}{G}body")
+
+
+# --- Rule version 1.1.0: everyday phrase families --------------------------------
+# Added after a review found correct answers in a learner's own words were rejected.
+# Same method as above: finite relation templates, clause-bounded, never keyword scoring.
+
+# Tight gap for verbless placements ("attempts in the database"): stays inside one
+# comma-separated clause and never crosses a negation.
+T = r"(?:(?!\b(?:not|never|cannot|no|without)\b)[^,.;:!?\n]){0,45}?"
+WHO = r"(?:visitors?|users?|anyone|anybody|customers?|people|someone|somebody|attackers?|everyone)"
+STORE = r"(?:database|db|durable storage|persistent storage|permanent storage|disk|supabase|postgres(?:ql)?|sqlite|sql table|table|local ?storage)"
+THING = r"(?:progress|attempts?|answers?|responses?|results?|data|state|rows?|it|them|everything|(?:each|every) (?:attempt|answer|response|one))"
+SECRET = r"(?:secrets?|credentials?|(?:private |api |secret )*keys?|tokens?)"
+ENV = r"(?:(?:server(?:-side)?|backend) (?:env(?:ironment)?(?: variables?| vars?| config(?:uration)?)?|\.env)|env(?:ironment)? (?:variables?|vars?|config(?:uration)?|file)|secrets? manager|server-side|(?:on |in )?the (?:server|backend))"
+UI = r"(?:(?:temporary |local |component |react |frontend |browser |client |ui |in-memory )+state|state in the (?:browser|frontend|ui|component|page)|memory|a variable|the browser|the frontend|the ui)"
+LOADING = r"(?:loading (?:message|text|status|state|spinner|indicator)|loading)"
+GONE = r"(?:does not exist|not exist|nonexistent|missing|is not there|not there|not present|no such|unknown|invalid)"
+
+
+def extend(name, *patterns, negative=False):
+    start = len(PATTERNS[name])
+    PATTERNS[name] += tuple(
+        Pattern(name + f".{start + index + 1}", re.compile(r"\b" + pattern + r"(?!\w)", re.I), negative)
+        for index, pattern in enumerate(patterns))
+
+
+extend("browser_exposure",
+       rf"{WHO}{G}{ACT(r'(?:inspect|read|view|see|find|extract|copy|take|steal|grab|alter|change|edit|modify|tamper with|look at)')}{G}(?:code|javascript|js|key|token|rules|logic|discounts?|secret|page source|source)",
+       rf"{WHO}{G}{ACT(r'(?:open|opens|use|uses)')}{G}(?:dev ?tools|developer tools|inspect element|page source|view source)",
+       rf"(?:code|javascript|js|rules|logic|{K}){G}(?:is|are|becomes?){G}{ACT(r'(?:visible|exposed|readable|public)')}")
+extend("key_extraction",
+       rf"{WHO}{G}{ACT(r'(?:steal|grab|see|read|find|get|use|reuse)')}{G}{K}",
+       rf"{K}{G}(?:is|are|becomes?){G}{ACT(r'(?:visible|exposed|readable|public|leaked)')}")
+extend("server_rules",
+       rf"{S}{G}{ACT(r'(?:hold|holds|keep|keeps|store|stores|own|owns|decide|decides|run|runs|check|checks|compute|computes|contain|contains)')}{G}(?:business rules|discount(?:s| rules| logic)?|rules|logic|price)",
+       rf"{ACT(r'(?:put|keep|move|store|run|check|hold|place)')}{G}(?:business rules|discount(?: rules| logic)?|rules|logic){G}(?:on|in|to|onto){G}{S}")
+extend("rule_benefit",
+       rf"(?:one|a single)\s+(?:trusted |central |shared )?(?:copy|place|source of truth|source|version)",
+       rf"{ACT(r'(?:update|updated|change|changed|edit|edited|fix|fixed)')}{G}(?:in |at )?(?:one|a single) place",
+       rf"{ACT(r'(?:update|updated|change|changed)')}{G}without{G}(?:browser|client|app|user|redeploy|ship)",
+       rf"(?:the )?same{T}for (?:everyone|everybody|every user|all users|every customer|all customers)")
+extend("rule_benefit",
+       rf"cannot{G}(?:trust|rely on){G}(?:{B}|users?|customers?)", negative=True)
+extend("request_order",
+       rf"{ACT(r'(?:carry|carries|contain|contains|have|has|add|adds|pass|passes|need|needs|include|includes)')}{G}(?:4821|order (?:id|identifier|number)){G}(?:request|url|path|parameter|query|body)")
+extend("request_operation",
+       rf"{S}{G}{ACT(r'(?:know|knows|tell|tells|find|finds|see|sees)')}{G}which order",
+       rf"which order{G}{ACT(r'(?:fetch|get|retrieve|return|look up|find|load)')}",
+       rf"{ACT(r'(?:carry|carries|include|includes|send|sends|specify|specifies|use|uses|need|needs|have|has|state|states|say|says)')}{G}(?:http )?(?:method|verb|endpoint|operation|action|get request)")
+extend("server_key",
+       rf"{ACT(r'(?:move|moves|moved|put|puts|place|places|hide|hides)')}{G}{K}{G}(?:on|in|to|onto|at|behind|inside){G}{S}",
+       rf"{K}{G}(?:is|are|stays?|remains?|gets?|be){G}{ACT(r'(?:kept|stored|saved|held|hidden|retained|placed|put)')}{G}(?:on|in|at|by|behind|inside){G}{S}",
+       rf"{S}{G}{ACT(r'(?:add|adds|attach|attaches|hold|holds|own|owns|has|have)')}{G}{K}")
+extend("server_call",
+       rf"{S}{G}{ACT(r'(?:forward|forwards|send|sends|relay|relays|pass|passes|proxy|proxies)')}{G}(?:it|them|request|call){G}to{G}(?:provider|third-party|third party|api|service)")
+extend("temporary_loss",
+       rf"(?:only|just){T}(?:lived|lives|kept|stored|held|saved|existed|exists|was|is){T}in{T}(?:variables?|memory|ram|the browser|the page|the tab|state|javascript)",
+       rf"(?:variables?|memory|ram|state|it|everything|progress){G}(?:is|are|gets?){G}{ACT(r'(?:wiped|cleared|lost|reset|gone|erased|emptied|destroyed)')}{G}(?:refresh|reload|restart|close)",
+       rf"(?:refresh|reload|restart){G}{ACT(r'(?:wipe|wipes|clear|clears|reset|resets|erase|erases|lose|loses|kill|kills|destroy|destroys|empty|empties)')}{G}(?:it|everything|variables?|memory|data|progress|state)")
+extend("temporary_loss",
+       rf"(?:progress|it|data|answers?|nothing|they){G}(?:was|is|were|are){G}(?:not|never){G}(?:saved|stored|persisted|written)", negative=True)
+extend("save_durable",
+       rf"{ACT(SAVE + r'|write|writes|wrote|put|puts|insert|inserts|record|records|add|adds')}{G}{THING}{G}(?:in|to|into|on){G}{STORE}",
+       rf"{THING}{G}(?:be|is|are|gets?){G}{ACT(r'(?:saved|stored|persisted|retained|written|put|recorded|inserted)')}{G}(?:in|to|into|on){G}{STORE}")
+extend("retrieve_saved",
+       rf"{ACT(r'(?:fetch|fetches|fetched|reload|reloads|query|queries)')}{G}(?:saved |previous )?(?:progress|attempts?|answers?|responses?|data|rows?|them|it)",
+       rf"{ACT(r'(?:get|gets|pull|pulls|show|shows|display|displays)')}{G}(?:progress|attempts?|answers?|responses?|data|rows?|them|it){G}from{G}{STORE}",
+       rf"{ACT(r'(?:read|reads|load|loads|get|gets)')}{G}(?:it|them){G}(?:back|again)")
+extend("separate_entities",
+       rf"(?:separate|own|new|second|another|different|dedicated) (?:attempts? )?table",
+       rf"attempts table",
+       rf"(?:two|2|separate|different) tables",
+       rf"(?:one|a separate|a new|its own) (?:row|record) (?:per|for each|for every) attempt",
+       rf"(?:each|every) attempt{T}(?:own|separate|new) (?:row|record)")
+extend("each_attempt_row",
+       rf"(?:one|a separate|a new|its own|an individual) (?:row|record|entry|line) (?:per|for each|for every) (?:attempt|response|event|try)",
+       rf"(?:one|a single|each|every) (?:attempt|response|event) (?:per|on its own|in its own|in a separate) (?:row|record|line)",
+       rf"{ACT(r'(?:put|give|write|insert|add|record|create|make)')}{G}(?:each|every|one) {A}{G}(?:row|record)",
+       rf"{ACT(r'(?:create|creates|add|adds|insert|inserts|make|makes|store|stores|save|saves)')}{G}(?:five|5|twelve|12|multiple|many|several|separate) (?:rows|records|entries)",
+       rf"(?:separate|individual|their own|its own) (?:rows|records)")
+extend("attempt_learner",
+       rf"(?:foreign key|fk|reference|link|pointer){T}(?:to|back to|referencing|pointing to|into){T}learners?(?: table| row| record|\.id)?",
+       rf"(?:each|every|attempts?|rows?){G}{ACT(r'(?:with|has|have|having|gets?|carry|carries|stores?|includes?)')}{G}(?:learner_id|learner id)",
+       rf"(?:learner_id|learner id){T}(?:column|field|foreign key|fk){G}(?:each|every|attempt|row|pointing|referenc|learner)")
+extend("combined_problem",
+       rf"{ACT(r'(?:parse|parsing|split|splitting|scan|scanning|unpack|unpacking|search through|searching through)')}{G}(?:string|cell|text|list|blob|field|comma)")
+extend("combined_problem",
+       rf"(?:cannot|hard to|difficult to|impossible to|no (?:easy |simple )?way to|painful to|messy to){G}(?:filter|count|update|relate|query|search|sort|find|pick out|separate){G}(?:cell|string|attempts?|events?|responses?|individual|one|them|anything|date|week|failed)", negative=True)
+extend("independent_query",
+       rf"(?:own|separate|individual|one) (?:rows?|records?){G}{ACT(r'(?:filter|count|query|group|search|sum)(?:s|ed|ing)?')}",
+       rf"{ACT(r'(?:filter|count|query|group)')}{G}(?:by|on|per){G}(?:day|date|result|learner|week|status|monday)")
+extend("fixed_code",
+       rf"(?:concept list|fixed list|list of (?:supported )?concepts|supported concepts|concepts){T}(?:in|inside|into) (?:the |our )?(?:code|codebase|source code|a constant|repo)",
+       rf"(?:concept list|fixed list|list of (?:supported )?concepts|supported concepts|concepts|list){T}(?:hard-?coded|a constant|constants)")
+extend("secret_location",
+       rf"{SECRET}{T}(?:in|into|inside|as|on) (?:the |a |an )?{ENV}",
+       rf"{SECRET}{T}{ENV}")
+extend("attempt_location",
+       rf"(?:learner attempts|saved attempts|attempts?){T}(?:in|into|to|inside) (?:the |a |our )?{STORE}")
+extend("loading_location",
+       rf"{LOADING}{T}{UI}")
+extend("response_status",
+       rf"{ACT(r'(?:return|returns|send|sends|respond with|responds with|give|gives|reply with|replies with)')}{G}(?:status code|status|http code|response code|20[014])")
+extend("client_errors",
+       rf"(?:error|errors|failure|failed|fails|fail|4\d\d|5\d\d){G}client{G}{ACT(r'(?:handle|handles|check|checks|react|reacts|retry|retries|show|shows|know|knows|tell|tells|see|sees)')}",
+       rf"client{G}{ACT(r'(?:handle|handles|check|checks|react|reacts|retry|retries|show|shows|know|knows)')}{G}(?:error|errors|failure|failed|fails|went wrong|4\d\d|5\d\d)")
+extend("foreign_key",
+       rf"(?:learner_id|learner id){T}(?:foreign key|fk){G}(?:to|referencing|references|on|pointing to){G}learners?",
+       rf"(?:foreign key|fk)(?: constraint)?{G}(?:learner_id|learner id){G}(?:to|references|referencing|pointing to){G}learners?",
+       rf"(?<!without a )(?<!no )foreign key constraint",
+       rf"{ACT(r'(?:add|adds|use|uses|create|creates|define|defines|declare|declares|need|needs|set|sets)')}{T}foreign key")
+extend("reject_orphan",
+       rf"(?:foreign key|fk|constraint|database|db|postgres|supabase|it){G}{ACT(r'(?:prevent|prevents|reject|rejects|block|blocks|refuse|refuses|stop|stops|disallow|disallows|fail|fails|throw|throws|error|errors)')}{G}{GONE}")
+extend("reject_orphan",
+       rf"cannot{G}(?:add|insert|create|save|store|have){G}attempt{G}(?:unless|without|until){G}(?:learner|exists?)", negative=True)
+extend("retry_gap",
+       rf"(?:retry(?: attempt| row)?|second attempt|new attempt){G}{ACT(r'(?:need|needs|has|have|get|gets|store|stores|carry|carries|include|includes|keep|keeps|with)')}{G}(?:gap_id|gap id)",
+       rf"(?:foreign key|fk|link|reference|connection|pointer){G}(?:from|between){G}retry{G}(?:to|and){G}gap",
+       rf"(?:retry(?: attempt| row)?|second attempt){G}(?:foreign key|fk|reference|link|pointer){G}gap")
+extend("trace_gap",
+       rf"{ACT(r'(?:tell|see|know|track|trace|check|evaluate|measure|show|find out)')}{G}(?:whether|if|which|what){G}(?:retry|gap|difficulty|follow-up)")
+extend("trace_gap",
+       rf"{ACT(r'(?:trace|track|link|connect|follow)')}{G}(?:difficulty|gap){G}(?:to|through to|with){G}(?:result|retry|outcome|answer|attempt)")
+extend("followup_gap",
+       rf"follow-up{G}{ACT(r'(?:store|stores|has|have|get|gets|carry|carries|keep|keeps|need|needs)')}{G}(?:gap_id|gap id)",
+       rf"follow-up{G}(?:foreign key|fk|reference|link|pointer){G}gap")
+extend("gap_record",
+       rf"{ACT(r'(?:create|creates|make|makes|add|adds|use|uses|have|need|needs)')}{G}(?:gaps? table|table (?:for|of) gaps)")
+extend("trusted_price",
+       rf"{S}{G}{ACT(r'(?:calculate|calculates|validate|validates|recalculate|recalculates|compute|computes|look up|looks up|check|checks|verify|verifies|decide|decides|set|sets|work out|works out)')}{G}(?:price|total|amount|cost)")
+extend("not_browser_price",
+       rf"(?:ignore|ignores|discard|discards|distrust|overwrite|overwrites|reject|rejects){G}(?:price|total|value|amount|whatever){G}(?:{B}|user|sends?|sent)",
+       rf"(?:cannot|never|do not|must not|should not){G}trust{G}(?:{B}|user|customer)", negative=True)
+extend("order_729",
+       rf"(?:path|url|endpoint|route){T}{ACT(r'(?:changes? to|becomes?|is|should be|would be|ends? (?:in|with)|points? to|goes? to)')} (?:/orders?/|order |id )?(?<!\d)729\b",
+       rf"{ACT(r'(?:use|call|request|hit|get|fetch|send)')}{T}/orders?/729\b",
+       rf"4821{T}(?:to|with|by|becomes|->){T}(?<!\d)729\b")
+extend("survive_restart",
+       rf"(?:it|answer|data){G}(?:is|will be|stays?|remains?) (?:still )?(?:there|available|around|safe)",
+       rf"(?:variables?|memory|ram|it|everything){G}(?:is|are|gets?){G}{ACT(r'(?:wiped|cleared|lost|gone|reset|erased|emptied)')}{G}(?:restarts?|reboots?|crash|redeploy)")
+extend("bad_browser_trust",
+       rf"{ACT(r'(?:trust|accept|use)')}{G}(?:price|total){G}{B} (?:sends?|supplies|gives|provides|sent)")
+
+# Wrong designs a careless quote could otherwise slip past (see scripts/evaluate_checker.py).
+extend("bad_729",
+       rf"{ACT(r'(?:change|update|edit)')}{T}(?:label|text|title|heading|display)")
+extend("bad_event_cell",
+       rf"{ACT(r'(?:keep|store|save|put)')}{T}(?:all|every|the) (?:attempts|responses|events){T}(?:one|a single|the same) (?:row|cell|field|column)")
+extend("bad_fk_direction",
+       rf"learners?{T}(?:foreign key|fk){T}(?:to|for){T}attempts?",
+       rf"(?:comma|list){T}(?:in|inside|on){T}learner (?:row|record)",
+       rf"(?:one|a single) row per learner",
+       rf"attempts?(?: table)?{T}inside{T}learner (?:row|record)")
 
 
 def match_facts(text):
