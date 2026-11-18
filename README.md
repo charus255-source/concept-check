@@ -48,9 +48,11 @@ rules are reviewed again.
 
 ### Golden pairs
 
-`concept_app/verification/golden_pairs.json` (case IDs 1 to 20, two per concept) is the
-only set the grader uses. `concept_check_golden_pairs_20.csv` is the same 20 rows as a
-CSV, generated from that JSON. An earlier draft CSV used IDs 11 to 30 with different
+`concept_app/verification/golden_pairs.json` (case IDs 1 to 30, three per concept) is the
+only set the grader uses. `concept_check_golden_pairs_20.csv` is the same 30 rows as a
+CSV, generated from that JSON (the file name is kept so existing links work). Cases 21 to 30
+are case variants added after trainer feedback: fresh scenarios that need the same ideas
+as a proven case. An earlier draft CSV used IDs 11 to 30 with different
 questions; it was never used for grading and has been replaced.
 
 ## Measuring fairness
@@ -108,7 +110,8 @@ practice events, duplicate answers, and rate limits.
 
 ## Database
 
-Tables: `learners`, `cases`, `attempts`, `gaps`. Apply `migrations/001_events_and_grading_provenance.sql`
+Tables: `learners`, `cases`, `attempts`, `gaps`. Apply `migrations/001_events_and_grading_provenance.sql` (and, after deploying rules 1.3.0,
+`migrations/002_case_variants.sql`)
 in the Supabase SQL editor **before** deploying this version. It adds `event_type`
 (`explanation`, `retry`, `graded`), `idea_id`, `rule_version` and `source_fingerprint`
 to attempts, backfills old rows, and adds a unique index so a learner can submit
@@ -123,7 +126,7 @@ not names. Consent comes first: ask before recording a classmate thinking out lo
 
 * Rate limits are kept in memory on each server instance, so they slow bursts but
   are not a global cap. A shared store such as Upstash would make them global.
-* Each concept has two reviewed cases. When both are answered, the app names
-  concepts that still have a fresh case.
+* Each concept has three reviewed cases. When all are answered, the app says so calmly,
+  keeps the practice open, and offers another concept.
 * The phrase rules and quote check can still miss correct answers in unusual
   words. The app says so on every Not yet result.

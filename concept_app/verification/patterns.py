@@ -269,6 +269,12 @@ extend("request_order",
        rf"(?:path|url|query|param\w*|parameter|body|json|payload|package){G}{ORDER}\s?(?:id|identifier|number)")
 
 
+# Version 1.3.0: words the new case variants use for what gets saved.
+extend("save_durable",
+       rf"{ACT(SAVE)}{G}(?:messages?|history|scores?|results?){G}{D}",
+       rf"(?:messages?|history|scores?|results?){G}(?:should|must|can|needs? to)?{G}(?:be )?{ACT(r'(?:saved|stored|persisted|retained|kept)')}{G}{D}")
+
+
 # Recognized contradictions are independently matched, including appended bad advice.
 define("bad_key_browser",
        rf"{ACT(SAVE)}{GN}{K}{GN}\b(?:in|on|to)\b{GN}(?:browser|frontend|front end|client-side code)",

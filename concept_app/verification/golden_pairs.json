@@ -118,5 +118,65 @@
     "idea_id": "RETRY_GAP",
     "case_question": "A learner answers a fresh case incorrectly, receives a follow-up, and then answers another case. How can the database show which difficulty the follow-up was intended to address?",
     "case_answer": "Store the gap as a record and link the follow-up and retry attempt to that gap, preserving the relationship between the original difficulty and the retry."
+  },
+  {
+    "case_id": 21,
+    "idea_id": "BACKEND_PURPOSE",
+    "case_question": "A ticket-booking site puts its refund rules only in browser JavaScript, and the rules change every month. What could go wrong, and how could a backend help?",
+    "case_answer": "Browser code can be inspected and changed by users. A backend can centralize the refund rules, apply them consistently, and allow updates without relying on each browser."
+  },
+  {
+    "case_id": 22,
+    "idea_id": "API_REQUEST",
+    "case_question": "A delivery app asks the server for the status of order 5310, but the server replies that it does not know which order is meant. What should the request carry?",
+    "case_answer": "The request must carry the order identifier, 5310, for example in the URL path or a query parameter, so the server knows which order to look up."
+  },
+  {
+    "case_id": 23,
+    "idea_id": "API_AUTH",
+    "case_question": "A weather website calls a paid weather API from its frontend JavaScript, with the API key written in the code. How should it be redesigned so visitors cannot get the key?",
+    "case_answer": "The website should send the request through its backend, which keeps the key on the server and makes the authorized call to the weather API."
+  },
+  {
+    "case_id": 24,
+    "idea_id": "PERSISTENCE",
+    "case_question": "A quiz app shows each learner's score history, but the history is empty every time the server restarts. What should the app do so the history survives?",
+    "case_answer": "The history is kept only in temporary memory, which is lost when the server restarts. Save each attempt in durable storage such as a database, and retrieve the saved attempts when the history is shown."
+  },
+  {
+    "case_id": 25,
+    "idea_id": "FOREIGN_KEY_MANY_SIDE",
+    "case_question": "A learner has answered eight cases. A developer adds columns attempt_1 to attempt_8 to the learners table. What design would work for any number of attempts?",
+    "case_answer": "Store each attempt as a separate row in an attempts table, with a learner_id foreign key referencing the learner."
+  },
+  {
+    "case_id": 26,
+    "idea_id": "EVENT_ROWS",
+    "case_question": "A teacher wants to see how many attempts each learner made last week, but all attempts are stored as one long text field per learner. Why is that a problem, and what should change?",
+    "case_answer": "Each attempt should be stored as its own row so it can be filtered by date, counted, and analyzed independently."
+  },
+  {
+    "case_id": 27,
+    "idea_id": "DATA_LOCATION",
+    "case_question": "A chat app keeps each learner's last message in a server variable so it can show it again later. After a deploy, the messages are gone. Should the app rely on that variable? Explain.",
+    "case_answer": "No. A server variable is temporary and is lost on a restart or deploy. The app should save the data in durable storage such as a database so it survives a restart."
+  },
+  {
+    "case_id": 28,
+    "idea_id": "HTTP_RESPONSE",
+    "case_question": "An API creates a new learner account. How should it tell the client that the account was created?",
+    "case_answer": "Return an appropriate success status code, such as HTTP 201 Created, and optionally the new account's identifier."
+  },
+  {
+    "case_id": 29,
+    "idea_id": "REFERENTIAL_INTEGRITY",
+    "case_question": "A developer deletes a test learner, but some attempts still point to learner_id 42. What database rule should stop attempts from pointing to a learner that does not exist?",
+    "case_answer": "A foreign key constraint from attempts.learner_id referencing learners.id should reject attempts whose learner does not exist."
+  },
+  {
+    "case_id": 30,
+    "idea_id": "RETRY_GAP",
+    "case_question": "A teacher wants to know whether learners' second tries fix the difficulty they had. Retries are saved, but nothing records which difficulty each retry was for. What should change?",
+    "case_answer": "Each retry attempt should reference the gap it addresses, for example with a gap_id. This link connects the original difficulty to the retry and its result, so the teacher can trace whether it was fixed."
   }
 ]

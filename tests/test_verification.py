@@ -140,7 +140,7 @@ class VerificationTests(unittest.TestCase):
         self.assertEqual(verify(GOLDEN_PAIRS[13], answer)["status"], "NOT_YET")
 
     def test_all_twenty_authoritative_answers_pass_without_network(self):
-        self.assertEqual(set(GOLDEN_PAIRS), set(range(1, 21)))
+        self.assertEqual(set(GOLDEN_PAIRS), set(range(1, 31)))
         self.assertEqual(set(RULES), set(GOLDEN_PAIRS))
         with patch("requests.request", side_effect=AssertionError("Grading must not use a provider")):
             for case_id, case in GOLDEN_PAIRS.items():
@@ -252,6 +252,16 @@ class VerificationTests(unittest.TestCase):
             18: "Return the resource identifier.",
             19: "A foreign key constraint references learners.id.",
             20: "Store the gap as a record.",
+            21: "Users can inspect browser code.",
+            22: "The request should carry the right headers.",
+            23: "The backend securely stores the key.",
+            24: "Save attempts in durable storage.",
+            25: "Store each attempt as a separate row.",
+            26: "Each attempt has its own row.",
+            27: "No.",
+            28: "Return the resource identifier.",
+            29: "A foreign key constraint references learners.id.",
+            30: "The retry attempt references the gap.",
         }
         for case_id, answer in incomplete.items():
             with self.subTest(case=case_id):

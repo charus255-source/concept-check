@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 
 @dataclass(frozen=True)
@@ -73,4 +73,28 @@ RULES = {
               ("retry_gap", "Link the retry attempt to that gap."),
               ("followup_gap", "Link the follow-up to the same gap."),
               ("trace_gap", "Preserve the original-difficulty-to-retry relationship.")], ["bad_gap"]),
+    # Case variants (1.3.0): fresh scenarios that need the same ideas as a proven case,
+    # so learners get a third case per concept (trainer: "add case variants").
+    21: rule([("browser_exposure", "Explain how users can inspect or change rules in browser code."),
+              ("server_rules", "Identify the backend's responsibility for the refund rules."),
+              ("rule_benefit", "Explain centralization, consistent application, independent updates, or why browser rules cannot be the authority.")], ["bad_browser_trust"]),
+    22: rule([("request_order", "Say what the request must carry: the order ID, e.g. in the URL path or a parameter.")], ["bad_body_required"]),
+    23: rule([("browser_backend", "Route the weather API request through the backend."),
+              ("server_key", "Keep the key on the server."),
+              ("server_call", "Have the backend make the authorized call to the weather API.")], ["bad_key_browser"]),
+    24: rule([("temporary_loss", "Explain that memory is lost when the server restarts."),
+              ("save_durable", "Save the attempts in durable storage."),
+              ("retrieve_saved", "Retrieve the saved attempts to show the history.")], ["bad_temp"]),
+    25: rule([("each_attempt_row", "Store each attempt in a separate row."),
+              ("attempt_learner", "Link every attempt to its learner (learner_id foreign key).")], ["bad_fk_direction"]),
+    26: rule([("each_attempt_row", "Store each attempt in its own row."),
+              ("independent_query", "Explain filtering, counting, or analysis per attempt.")], ["bad_event_cell"]),
+    27: rule([("reject_temporary", "Reject relying only on a temporary server variable."),
+              ("save_durable", "Save the data in durable storage."),
+              ("survive_restart", "Connect that storage to surviving a restart or deploy.")], ["bad_temp"]),
+    28: rule([("creation_success", "Return a success status that says the account was created (e.g. 201 Created).")], ["bad_response"]),
+    29: rule([("foreign_key", "Identify the foreign key referencing learners.id."),
+              ("reject_orphan", "Explain that the database rejects attempts for a learner that does not exist.")], ["bad_orphan", "bad_fk_direction"]),
+    30: rule([("retry_gap", "Link each retry attempt to the gap it addresses."),
+              ("trace_gap", "Explain tracing the original difficulty to the retry and its result.")], ["bad_gap"]),
 }

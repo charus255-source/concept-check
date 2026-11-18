@@ -92,7 +92,7 @@ function guide(kind) {
     done: state.lastPassed
       ? ['Well done', 'You explained it and applied it to a new case. Your result is saved.', 'Or explain this concept again…']
       : ['Not yet', 'That is how learning starts. Open the model answer above, compare it with yours, then explain it again in your own words.', 'Explain it again, in your own words…'],
-    nocase: ['Practice saved', 'You have used both cases for this concept. You can still explain it again below for practice.', 'Explain it again, in your own words…'],
+    nocase: ['Practice saved', 'You have used all the cases for this concept. You can still explain it again below for practice.', 'Explain it again, in your own words…'],
   }[kind];
   if (kind === 'done') steps('done');
   $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));

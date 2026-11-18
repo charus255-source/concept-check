@@ -101,6 +101,9 @@ class ApiTests(unittest.TestCase):
         gap = self.explain_and_retry()
         after = self.answer("PERSISTENCE", "Store the attempts in a database and load them again later.", gap)
         self.assertEqual(after.json()["status"], "PASS")
+        third = self.answer("PERSISTENCE", "Memory is cleared on restart. Store the attempts in a database and read them back.")
+        self.assertEqual(third.json()["case_id"], 24)   # the new case variant
+        self.assertEqual(third.json()["status"], "PASS")
         exhausted = self.client.post("/api/assessment/case", json={"idea_id": "PERSISTENCE"})
         self.assertEqual(exhausted.status_code, 409)
         self.assertIn("Next, try:", exhausted.json()["detail"])
