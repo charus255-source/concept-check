@@ -24,6 +24,7 @@ from concept_app.probing import ProbingUnavailable, probe
 from concept_app.catalog import public_case
 from concept_app.quoting import find_quotes
 from concept_app.verification import verify, validate_source, VerificationUnavailable
+from concept_app.verification.rules import VERSION as RULE_VERSION
 
 ROOT = Path(__file__).resolve().parent.parent
 app = FastAPI(title="Concept Check", docs_url=None, redoc_url=None)
@@ -205,12 +206,12 @@ def history(request: Request, response: Response):
     response.headers["Cache-Control"] = "no-store"
     rows = database(settings, "GET", "attempts", params={
         "learner_id": "eq." + str(identity), "order": "created_at.asc,id.asc",
-        "select": "id,case_id,idea_id,event_type,gap_id,learner_response,recited_sentence,passed,created_at",
+        "select": "id,case_id,idea_id,event_type,gap_id,learner_response,recited_sentence,passed,rule_version,created_at",
         "limit": "500",
     })
     if not rows:
         return {"attempts": []}
-    cases = database(settings, "GET", "cases", params={"select": "case_id,idea_id,case_question"})
+    cases = database(settings, "GET", "cases", params={"select": SOURCE_FIELDS})
     case_map = {row["case_id"]: row for row in cases}
     gaps = database(settings, "GET", "gaps", params={
         "attempt_id": "in.(" + ",".join(str(row["id"]) for row in rows) + ")",
@@ -223,7 +224,28 @@ def history(request: Request, response: Response):
         # Practice events are not answers to a case, so they show no case question.
         row["case_question"] = case.get("case_question") if row.get("event_type") == "graded" else None
         row["probe"] = gap_map.get(row["id"])
+        row["result"] = saved_result(row, case) if row.get("event_type") == "graded" else None
+        row.pop("rule_version", None)
     return {"attempts": rows}
+
+
+def saved_result(row, case):
+    """Rebuild the detail of a saved grade, so history shows what was right and missing.
+
+    Only for answers graded by the current rules; the saved pass/fail always wins."""
+    if row.get("rule_version") != RULE_VERSION or not case:
+        return None
+    try:
+        result = verify(case, row["learner_response"])
+    except (VerificationUnavailable, ValueError):
+        return None
+    if row["passed"]:
+        for check in result["checks"]:
+            check["met"] = True
+        result["met"], result["contradictions"] = result["total"], []
+    result["status"] = "PASS" if row["passed"] else "NOT_YET"
+    result["message"] = result_message(result)
+    return result
 
 
 class ExplanationRequest(BaseModel):

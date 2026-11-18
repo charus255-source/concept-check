@@ -63,6 +63,7 @@ function showError(message) {
 }
 
 function steps(stage) {
+  ['step-explain', 'step-reflect', 'step-retry'].forEach(id => $(id).classList.toggle('done', stage === 'done'));
   $('step-explain').classList.toggle('active', stage === 'explain');
   $('step-reflect').classList.toggle('active', stage === 'reflect');
   $('step-retry').classList.toggle('active', stage === 'retry');
@@ -83,6 +84,7 @@ function guide(kind) {
     case: ['Your turn', 'Solve the case above. Type your answer in the box below and press Enter.', 'Type your answer to the case…'],
     done: ['Finished', 'Click “New conversation” (top left) to pick another concept.', 'Or explain this concept again…'],
   }[kind];
+  if (kind === 'done') steps('done');
   $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
   $('explanation').placeholder = text[2];
   $('chat-form').classList.toggle('in-conversation', kind !== 'start');
@@ -232,7 +234,9 @@ function selectIdea(id, restore = false, open = false) {
       }
       message('user', row.learner_response);
       if (typeof row.passed === 'boolean') {
-        message('assistant', row.passed ? 'Pass. All the ideas for this case were covered.' : 'Not yet. Some ideas for this case were still missing.');
+        if (row.result) message('assistant', exportText(row.result), null, false, resultCard(row.result));
+        else message('assistant', row.passed ? 'Pass. All the ideas for this case were covered.'
+          : 'Not yet. This answer was checked with an older version of the rules, so the details are not available.');
         state.gap = null;
         state.assessmentGap = null;
       } else if (row.probe) {

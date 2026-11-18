@@ -122,3 +122,18 @@ class ApiTests(unittest.TestCase):
                  for _ in range(limit + 1)]
         self.assertEqual(codes[-1], 429)
         self.assertEqual(set(codes[:-1]), {200})
+
+
+class HistoryDetailTests(ApiTests):
+    def test_history_shows_what_was_right_and_missing(self):
+        self.answer("BACKEND_PURPOSE", "developer has to put the rules in backend server as code")
+        graded = [row for row in self.client.get("/api/history").json()["attempts"] if row["event_type"] == "graded"]
+        result = graded[0]["result"]
+        self.assertEqual((result["status"], result["met"], result["total"]), ("NOT_YET", 1, 3))
+        self.assertEqual(result["message"], "Almost there. You covered 1 of 3 ideas.")
+
+    def test_answers_graded_by_older_rules_show_no_details(self):
+        self.answer("BACKEND_PURPOSE", "developer has to put the rules in backend server as code")
+        self.db.tables["attempts"][-1]["rule_version"] = "1.0.2"
+        graded = [row for row in self.client.get("/api/history").json()["attempts"] if row["event_type"] == "graded"]
+        self.assertIsNone(graded[0]["result"])
