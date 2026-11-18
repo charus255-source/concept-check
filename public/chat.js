@@ -15,7 +15,7 @@ const ideas = [
 const $ = id => document.getElementById(id);
 const state = { idea: 'API_AUTH', gap: null, busy: false, attempts: [], export: [], ready: false,
   assessment: null, assessmentGap: null };
-const retryMessage = 'Your second try is saved as practice. Now apply your reasoning to a different case.';
+const retryMessage = '✓ Your second try is saved. Practice is not graded: a new case will show whether it clicked.';
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -88,10 +88,17 @@ function guide(kind) {
     explain: ['Step 1', 'Now explain the concept in your own words below, then press Enter.', `In my own words: ${question}`],
     reflect: ['Your turn', 'Answer the question above, then press Enter.', 'Type your answer to the question…'],
     case: ['Your turn', 'Solve the case above, then press Enter.', 'Type your answer to the case…'],
+    retry: ['Step 3', 'Ready? Your new case checks what you worked out.', 'Or explain this concept again…'],
     done: ['Finished', 'Your result is saved.', 'Or explain this concept again…'],
   }[kind];
   if (kind === 'done') steps('done');
   $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
+  if (kind === 'retry') {
+    const next = element('button', 'next-concept', 'Next: try a new case →');
+    next.type = 'button';
+    next.addEventListener('click', () => { void requestAssessment(state.assessmentGap); });
+    $('next-step').append(next);
+  }
   if (kind === 'done') {
     // Visible on phones too, where "New conversation" sits inside the menu.
     const next = element('button', 'next-concept', 'Pick another concept →');
@@ -136,9 +143,6 @@ function message(role, text, probeData, pending = false, custom = null) {
     content.append(element('div', 'message-question', probeData.follow_up_question));
   } else {
     content.append(element('div', 'message-body', text));
-    if (role === 'assistant' && text === retryMessage) {
-      content.append(element('div', 'message-note', 'Saved as practice, without a pass/fail judgment.'));
-    }
   }
   row.append(avatar, content);
   $('messages').append(row);
@@ -267,11 +271,11 @@ function selectIdea(id, restore = false, open = false) {
     }
     steps(state.gap ? 'reflect' : rows.length ? 'retry' : 'explain');
     restoredRows = rows.length;
-    $('assessment-actions').hidden = state.assessmentGap === null;
+    $('assessment-actions').hidden = true;
   }
   if (open) $('welcome').hidden = true;
   view();
-  guide(state.gap ? 'reflect' : restoredRows ? 'done' : 'start');
+  guide(state.gap ? 'reflect' : state.assessmentGap ? 'retry' : restoredRows ? 'done' : 'start');
   updateHistory();
   closeNavigation();
   softFocus({ preventScroll: true });
@@ -395,10 +399,11 @@ $('chat-form').addEventListener('submit', async event => {
   $('error').hidden = true;
   setBusy(true);
   const userRow = message('user', explanation);
+  $('explanation').value = '';
+  $('explanation').dispatchEvent(new Event('input'));
   const pending = message('assistant', '', null, true);
   scrollToLatest();
   let succeeded = false;
-  let nextAssessmentGap = null;
   try {
     await ensureSession();
     const assessing = state.assessment;
@@ -419,11 +424,10 @@ $('chat-form').addEventListener('submit', async event => {
       }
       steps('explain');
     } else if (result.stage === 'retry') {
-      message('assistant', result.message);
+      message('assistant', retryMessage);
       state.gap = null;
       state.assessmentGap = result.gap_id;
-      nextAssessmentGap = result.gap_id;
-      $('assessment-actions').hidden = false;
+      $('assessment-actions').hidden = true;
       steps('retry');
     } else {
       message('assistant', '', result);
@@ -434,7 +438,8 @@ $('chat-form').addEventListener('submit', async event => {
     }
     succeeded = true;
     $('explanation').value = '';
-    guide(state.assessment ? 'case' : state.gap ? 'reflect' : assessing ? (assessing.phase === 'before' ? 'explain' : 'done') : 'explain');
+    guide(state.assessment ? 'case' : state.gap ? 'reflect' : result.stage === 'retry' ? 'retry'
+      : assessing ? (assessing.phase === 'before' ? 'explain' : 'done') : 'explain');
     $('explanation').dispatchEvent(new Event('input'));
     // History is a separate read: it must not hold the composer in its busy state.
     void refreshHistory();
@@ -443,6 +448,8 @@ $('chat-form').addEventListener('submit', async event => {
     pending.remove();
     userRow.remove();
     state.export.pop();
+    $('explanation').value = explanation;
+    $('explanation').dispatchEvent(new Event('input'));
     showError(error.message);
     if (error.status === 401) state.ready = false;
     if (error.status === 409 && state.assessment) {
@@ -454,16 +461,40 @@ $('chat-form').addEventListener('submit', async event => {
     setBusy(false);
     if (succeeded) softFocus({ preventScroll: true }); else $('explanation').focus();
   }
-  // Selection has its own error handling: a saved retry must never be resubmitted
-  // merely because requesting the next case failed. Release busy before entering.
-  if (succeeded && nextAssessmentGap !== null) await requestAssessment(nextAssessmentGap);
 });
 
-$('export').addEventListener('click', () => {
-  if (!state.export.length) { showError('Start a conversation first, then download your notes here.'); return; }
-  const title = ideas.find(idea => idea[0] === state.idea)[1];
-  const text = '# Concept Check\n\n' + title + '\n\n' + state.export.map(row =>
-    (row.role === 'user' ? 'You' : 'Concept Check') + '\n' + row.text).join('\n\n---\n\n');
+function notesFromHistory(rows) {
+  const byIdea = new Map();
+  for (const row of rows) {
+    if (!byIdea.has(row.idea_id)) byIdea.set(row.idea_id, []);
+    byIdea.get(row.idea_id).push(row);
+  }
+  const sections = [];
+  for (const [id, items] of byIdea) {
+    const idea = ideas.find(item => item[0] === id);
+    const lines = ['## ' + (idea ? idea[1] : id)];
+    for (const row of items) {
+      if (typeof row.passed === 'boolean') {
+        lines.push('Case: ' + (row.case_question || ''), 'My answer: ' + row.learner_response,
+          'Result: ' + (row.result ? exportText(row.result) : row.passed ? 'Pass' : 'Not yet'));
+      } else if (row.probe) {
+        lines.push('My explanation: ' + row.learner_response);
+        if (row.recited_sentence) lines.push('Sentence to dig into: ' + row.recited_sentence);
+        lines.push('Follow-up question: ' + row.probe.follow_up_question);
+      } else {
+        lines.push((row.gap_id ? 'My second try: ' : 'My explanation: ') + row.learner_response);
+      }
+      lines.push('');
+    }
+    sections.push(lines.join('\n'));
+  }
+  return sections.join('\n---\n\n');
+}
+
+$('export').addEventListener('click', async () => {
+  if (state.ready || state.attempts.length) await refreshHistory();
+  if (!state.attempts.length) { showError('Start a conversation first, then download your notes here.'); return; }
+  const text = '# Concept Check: my notes\n\n' + notesFromHistory(state.attempts);
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
   const anchor = element('a');
   anchor.href = url;

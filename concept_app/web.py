@@ -276,7 +276,7 @@ def check_explanation(payload: ExplanationRequest, request: Request, response: R
             "gap_id": payload.gap_id, "learner_response": explanation, "passed": None,
         })
         return {"attempt_id": saved[0]["id"], "stage": "retry",
-                "message": "Your second try is saved as practice. Now apply your reasoning to a different case.",
+                "message": "Your second try is saved. Practice is not graded: a new case will show whether it clicked.",
                 "gap_id": payload.gap_id, "assessed": False}
     try:
         result = probe(settings, payload.idea_id, explanation)
