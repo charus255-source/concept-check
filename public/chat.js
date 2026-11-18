@@ -68,10 +68,11 @@ function steps(stage) {
   $('step-retry').classList.toggle('active', stage === 'retry');
   $('composer-hint').textContent = stage === 'reflect'
     ? 'Take your time. What happens, and why?'
+    : stage === 'retry' ? 'Apply what you worked out to the new case.'
     : 'Your own words are the best place to start.';
 }
 
-function message(role, text, probeData, pending = false) {
+function message(role, text, probeData, pending = false, custom = null) {
   $('welcome').hidden = true;
   const row = element('article', 'message ' + role);
   const avatar = element('span', 'message-avatar', role === 'user' ? 'Y' : undefined);
@@ -85,6 +86,8 @@ function message(role, text, probeData, pending = false) {
     typing.append(element('span'), element('span'), element('span'));
     content.append(typing);
     content.append(element('div', 'message-note', state.assessment ? 'Checking your answer against the predefined rules…' : 'Finding a question worth asking…'));
+  } else if (custom) {
+    content.append(custom);
   } else if (probeData) {
     content.append(element('div', 'message-body', probeData.recited_sentence ? 'Let’s look a little closer at this part.' : 'Let’s take your reasoning a little further.'));
     if (probeData.recited_sentence) {
@@ -101,9 +104,57 @@ function message(role, text, probeData, pending = false) {
   }
   row.append(avatar, content);
   $('messages').append(row);
-  if (!pending) state.export.push({ role, text: probeData
+  if (!pending) state.export.push({ role, text: custom ? text : probeData
     ? [probeData.recited_sentence, probeData.follow_up_question].filter(Boolean).join('\n\n') : text });
   return row;
+}
+
+function caseCard(phase, question) {
+  const card = element('div', 'case-card');
+  card.append(element('div', 'label', phase === 'before' ? 'Case · before practice' : phase === 'after' ? 'New case · after practice' : 'Case'));
+  card.append(element('p', '', question));
+  return card;
+}
+
+function resultCard(result) {
+  const kind = result.status === 'PASS' ? 'pass' : result.met && !result.contradictions.length ? 'almost' : 'notyet';
+  const card = element('div', 'result-card ' + kind);
+  const head = element('div', 'result-head');
+  head.append(element('span', 'result-badge', { pass: 'Pass', almost: 'Almost there', notyet: 'Not yet' }[kind]));
+  head.append(element('span', 'result-title', result.message));
+  card.append(head);
+  const meter = element('div', 'meter');
+  meter.setAttribute('aria-hidden', 'true');
+  result.checks.forEach(check => meter.append(element('i', check.met ? 'on' : '')));
+  card.append(meter);
+  const body = element('div', 'result-body');
+  const got = result.checks.filter(check => check.met);
+  const missing = result.checks.filter(check => !check.met);
+  if (got.length) {
+    body.append(element('h3', '', 'What you got right'));
+    const list = element('ul');
+    got.forEach(check => { const item = element('li', 'got'); item.append(icon('check'), element('span', '', check.feedback)); list.append(item); });
+    body.append(list);
+  }
+  if (missing.length || result.contradictions.length) {
+    body.append(element('h3', '', 'Still missing'));
+    const list = element('ul');
+    missing.forEach(check => list.append(element('li', 'missing', check.feedback)));
+    if (result.contradictions.length) list.append(element('li', 'conflict', 'Part of your answer gives advice that would break this case.'));
+    body.append(list);
+  }
+  if (result.status !== 'PASS') {
+    body.append(element('p', 'result-note', 'The checks can miss a correct answer written in unusual words. If you think yours is right, tell your trainer.'));
+  }
+  card.append(body);
+  return card;
+}
+
+function exportText(result) {
+  const right = result.checks.filter(check => check.met).map(check => '✓ ' + check.feedback);
+  const missing = result.checks.filter(check => !check.met).map(check => '• ' + check.feedback);
+  return [result.message, right.length ? 'What you got right:\n' + right.join('\n') : '',
+    missing.length ? 'Still missing:\n' + missing.join('\n') : ''].filter(Boolean).join('\n\n');
 }
 
 function scrollToLatest() {
@@ -145,12 +196,14 @@ function selectIdea(id, restore = false) {
   $('error').hidden = true;
   steps('explain');
   const idea = ideas.find(item => item[0] === id);
+  $('current-concept').textContent = idea[1];
+  document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === id));
   $('explanation').placeholder = `In my own words: ${idea[1].charAt(0).toLowerCase() + idea[1].slice(1)}…`;
   if (restore) {
     const rows = state.attempts.filter(row => row.idea_id === id);
     for (const row of rows) {
       if (typeof row.passed === 'boolean') {
-        message('assistant', 'Practice case: ' + row.case_question);
+        message('assistant', 'Case: ' + row.case_question, null, false, caseCard('', row.case_question));
       }
       message('user', row.learner_response);
       if (typeof row.passed === 'boolean') {
@@ -199,7 +252,18 @@ $('concept').replaceChildren(...ideas.map(([id, title]) => {
 }));
 $('concept').value = state.idea;
 $('concept').addEventListener('change', event => selectIdea(event.target.value, true));
-document.querySelectorAll('[data-idea]').forEach(button => button.addEventListener('click', () => selectIdea(button.dataset.idea, true)));
+ideas.forEach(([id, question, title], index) => {
+  const card = element('button', 'topic-card');
+  card.type = 'button';
+  card.dataset.idea = id;
+  const text = element('span', 'topic-text');
+  text.append(element('strong', '', title), element('span', '', question));
+  card.append(element('span', 'topic-number', String(index + 1).padStart(2, '0')), text, icon('chevron'));
+  card.addEventListener('click', () => { selectIdea(id, true); $('explanation').focus(); });
+  $('topic-grid').append(card);
+});
+document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === state.idea));
+$('current-concept').textContent = ideas.find(idea => idea[0] === state.idea)[1];
 $('new-chat').addEventListener('click', () => {
   selectIdea(state.idea);
   $('explanation').value = '';
@@ -227,10 +291,10 @@ async function requestAssessment(gapId) {
     state.assessmentGap = gapId;
     state.gap = null;
     $('assessment-actions').hidden = true;
-    message('assistant', (result.phase === 'before' ? 'Before you practice, try this case:\n\n' : 'Apply your reasoning to this different case:\n\n') + result.case_question);
+    message('assistant', 'Case: ' + result.case_question, null, false, caseCard(result.phase, result.case_question));
     $('explanation').value = '';
     $('explanation').placeholder = 'Work through this case in your own words…';
-    $('composer-hint').textContent = 'Python decides the result. The AI can only point at your words.';
+    $('composer-hint').textContent = 'Answer the case in your own words. Python checks it; the AI never grades.';
     $('explanation').dispatchEvent(new Event('input'));
     scrollToLatest();
   } catch (error) {
@@ -295,13 +359,7 @@ $('chat-form').addEventListener('submit', async event => {
     pending.remove();
     if (assessing) {
       state.assessment = null;
-      const right = result.checks.filter(check => check.met).map(check => '✓ ' + check.feedback);
-      const missing = result.checks.filter(check => !check.met).map(check => '• ' + check.feedback);
-      if (result.contradictions.length) missing.push('• Part of your answer gives advice that would break this case.');
-      message('assistant', result.message +
-        (right.length ? '\n\nWhat you got right:\n' + right.join('\n') : '') +
-        (missing.length ? '\n\nStill missing:\n' + missing.join('\n') : '') +
-        (result.status === 'PASS' ? '' : '\n\nThe checks can miss a correct answer written in unusual words. If you think yours is right, say so to your trainer.'));
+      message('assistant', exportText(result), null, false, resultCard(result));
       message('assistant', assessing.phase === 'before'
         ? 'Now explain the concept in your own words. We’ll explore one follow-up before a different case.'
         : 'Your case answer and its result are saved. You can explore another concept.');
