@@ -78,11 +78,11 @@ function guide(kind) {
   const idea = ideas.find(item => item[0] === state.idea);
   const question = idea[1].charAt(0).toLowerCase() + idea[1].slice(1);
   const text = {
-    start: ['Step 1', `Explain “${idea[1]}” in your own words. Type below and press Enter.`, `In my own words: ${question}`],
-    explain: ['Step 1', `Now explain “${idea[1]}” in your own words. Type below and press Enter.`, `In my own words: ${question}`],
-    reflect: ['Your turn', 'Answer the question above. Type in the box below and press Enter.', 'Type your answer to the question…'],
-    case: ['Your turn', 'Solve the case above. Type your answer in the box below and press Enter.', 'Type your answer to the case…'],
-    done: ['Finished', 'Click “New conversation” (top left) to pick another concept.', 'Or explain this concept again…'],
+    start: ['Step 1', 'Explain it in your own words below, then press Enter.', `In my own words: ${question}`],
+    explain: ['Step 1', 'Now explain the concept in your own words below, then press Enter.', `In my own words: ${question}`],
+    reflect: ['Your turn', 'Answer the question above, then press Enter.', 'Type your answer to the question…'],
+    case: ['Your turn', 'Solve the case above, then press Enter.', 'Type your answer to the case…'],
+    done: ['Finished', 'Tap “New conversation” to pick another concept.', 'Or explain this concept again…'],
   }[kind];
   if (kind === 'done') steps('done');
   $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
