@@ -242,6 +242,7 @@ def check_explanation(payload: ExplanationRequest, request: Request, response: R
         raise HTTPException(422, "Write at least 10 characters in your own words.")
     if payload.idea_id not in IDEAS:
         raise HTTPException(422, "Choose a Module 2 concept.")
+    rate_limit(request, "check")
     if payload.gap_id is not None:
         original = owned_gap(settings, identity, payload.gap_id)
         if original["idea_id"] != payload.idea_id:
@@ -254,7 +255,6 @@ def check_explanation(payload: ExplanationRequest, request: Request, response: R
         return {"attempt_id": saved[0]["id"], "stage": "retry",
                 "message": "Your second try is saved as practice. Now apply your reasoning to a different case.",
                 "gap_id": payload.gap_id, "assessed": False}
-    rate_limit(request, "check")
     try:
         result = probe(settings, payload.idea_id, explanation)
     except ProbingUnavailable as exc:

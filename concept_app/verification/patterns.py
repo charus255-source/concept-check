@@ -9,6 +9,10 @@ from .normalize import unsupported_context
 # Do not bind a verb across a contrast or an explicitly different machine/actor.
 # This prevents attributing "the browser makes the API call" to an earlier backend.
 G = r"(?:(?!\b(?:but|however|whereas)\b|\b(?:backend|server|browser|frontend|client|website|page)\s+(?:(?:securely|directly)\s+)?(?:makes?|calls?|stores?|keeps?|contacts?|should|must|can|will)\b)(?:\.(?=[a-z_])|[^.;!?\n])){0,90}?"
+# For bad advice: the gap may not cross a negation, so "the key on the server, not in
+# the browser" is not read as "the key in the browser".
+GN = G.replace(r"(?!\b(?:but|however|whereas)\b", r"(?!\b(?:but|however|whereas|not|never|instead|rather|nor|unlike)\b", 1)
+assert GN != G
 S = r"(?:backend|back end|server)"
 B = r"(?:browser|frontend|front end|client(?:-side)?)"
 D = r"(?:database|db|durable storage|persistent storage|supabase|postgres(?:ql)?)"
@@ -225,6 +229,11 @@ extend("response_status",
        rf"{ACT(r'(?:return|returns|send|sends|respond with|responds with)')}\s+(?:an? |the )?(?:appropriate |proper |correct |http )*status(?: codes?)?")
 extend("trusted_price",
        rf"{S}{G}{ACT(r'(?:calculate|calculates|validate|validates|recalculate|recalculates|recompute|recomputes|compute|computes|look up|looks up|decide|decides)')}{G}(?:the |final |real )?(?:price|total)")
+extend("not_browser_price",
+       rf"(?:not|never|cannot|do not)\s+(?:[\w'-]+\s+){{0,2}}(?:trust|accept|use)\w*{G}{B}(?:-supplied| supplied|'s)?\s+(?:price|total|value)",
+       negative=True)
+extend("followup_gap",
+       rf"{ACT(r'(?:link|connect)')}{G}(?:retry|retry attempt){G}follow-up{G}(?:same |that |original )?gap")
 extend("order_729",
        rf"/orders?/729\b",
        rf"4821{G}to 729\b")
@@ -240,46 +249,45 @@ extend("followup_gap",
 
 # Recognized contradictions are independently matched, including appended bad advice.
 define("bad_key_browser",
-       rf"{ACT(SAVE)}{G}{K}{G}(?:in|on|to){G}(?:browser|frontend|front end|client-side code)",
-       rf"{ACT(r'put')}{G}{K}{G}(?:in|on){G}(?:browser|frontend|front end|client-side code)",
-       rf"{ACT(r'(?:send|ship|deliver|expose)')}{G}(?:private |api )?key{G}(?:visitors?|browser)",
+       rf"{ACT(SAVE)}{GN}{K}{GN}\b(?:in|on|to)\b{GN}(?:browser|frontend|front end|client-side code)",
+       rf"{ACT(r'put')}{GN}{K}{GN}\b(?:in|on)\b{GN}(?:browser|frontend|front end|client-side code)",
+       rf"{ACT(r'(?:send|ship|deliver|expose)')}{GN}(?:private |api )?key{GN}(?:visitors?|browser)",
        rf"{ACT(r'(?:hide|embed)')}\s+(?:the )?{K}\s+in\s+(?:the )?{B}(?:\s+javascript|\s+code)?",
        rf"{B}\s+{ACT(r'(?:call|calls)')}\s+(?:the )?(?:third-party|third party|provider)\s+api\s+(?:using|with)\s+(?:the )?{K}",
        rf"{ACT(r'call')}\s+(?:the )?(?:third-party|third party|provider)\s+api\s+from\s+(?:the )?{B}\s+(?:using|with)\s+(?:the )?{K}")
 define("bad_browser_trust",
-       rf"{ACT(r'(?:put|keep|store)')}{G}(?:discount |business )?rules{G}(?:only )?(?:in|on) (?:the )?(?:browser|frontend)(?: javascript| code)?",
-       rf"{ACT(r'(?:trust|accept|use)')}{G}(?:price|total|discount){G}(?:the )?browser sends",
-       rf"{ACT(r'(?:trust|accept|use)')}{G}(?:browser-supplied|browser supplied|customer-modified){G}(?:price|total|discount)",
-       rf"browser(?:-only)? (?:rules|code|price){G}{ACT(r'(?:is|are)')}{G}(?:authoritative|tamper-proof|trusted)")
+       rf"{ACT(r'(?:put|keep|store)')}{GN}(?:discount |business )?rules{GN}(?:only )?(?:in|on) (?:the )?(?:browser|frontend)(?: javascript| code)?",
+       rf"{ACT(r'(?:trust|accept|use)')}{GN}(?:price|total|discount){GN}(?:the )?browser sends",
+       rf"{ACT(r'(?:trust|accept|use)')}{GN}(?:browser-supplied|browser supplied|customer-modified){GN}(?:price|total|discount)",
+       rf"browser(?:-only)? (?:rules|code|price){GN}{ACT(r'(?:is|are)')}{GN}(?:authoritative|tamper-proof|trusted)")
 define("bad_temp",
-       rf"(?:temporary variable|in-memory state|temporary state|global variable|variable|memory){G}{ACT(r'(?:survive|survives|retain|retains|persist|persists|stays?|lasts?)')}{G}(?:{RESTART}|next day)",
-       rf"{ACT(r'(?:keep|save|store|leave)')}{G}(?:attempts|progress|answers|it|them){G}(?:in )?(?:memory|a (?:global |temporary )?variable){G}(?:so|survive|next day|there)",
+       rf"(?:temporary variable|in-memory state|temporary state|global variable|variable|memory)[^,.;!?\n]{{0,40}}?{ACT(r'(?:survive|survives|retain|retains|persist|persists|stays?|lasts?)')}{GN}(?:{RESTART}|next day)",
+       rf"{ACT(r'(?:keep|save|store|leave)')}{GN}(?:attempts|progress|answers|it|them){GN}(?:in )?(?:memory|a (?:global |temporary )?variable){GN}(?:so|survive|next day|there)",
        rf"(?:temporary variable|variable|memory) (?:is|would be) (?:fine|enough|ok|okay)",
-       rf"\Ayes\b{G}(?:temporary variable|variable|memory)",
-       rf"{ACT(r'(?:keep|save|store)')}{G}(?:attempts|progress|answers){G}only{G}(?:temporary variable|memory)")
+       rf"{ACT(r'(?:keep|save|store)')}{GN}(?:attempts|progress|answers){GN}only{GN}(?:temporary variable|memory)")
 define("bad_event_cell",
        rf"{ACT(r'keep')}\s+(?:them|it|everything|all attempts)\s+in\s+(?:one|a single) cell",
-       rf"{ACT(r'(?:keep|store|save|put)')}{G}(?:all |every )?(?:attempts|responses|events){G}(?:one|single) (?:comma-separated )?cell",
-       rf"{ACT(r'(?:overwrite|replace)')}{G}(?:past attempts|history){G}(?:latest|newest)")
+       rf"{ACT(r'(?:keep|store|save|put)')}{GN}(?:all |every )?(?:attempts|responses|events){GN}(?:one|single) (?:comma-separated )?cell",
+       rf"{ACT(r'(?:overwrite|replace)')}{GN}(?:past attempts|history){GN}(?:latest|newest)")
 define("bad_fk_direction",
-       rf"{ACT(r'(?:store|put|keep|add)')}{G}(?:all |five |twelve )?attempt ids{G}(?:learner row|learner record)(?:{G}list)?",
+       rf"{ACT(r'(?:store|put|keep|add)')}{GN}(?:all |five |twelve )?attempt ids{GN}(?:learner row|learner record)(?:{GN}list)?",
        rf"learners\.(?:id|attempt_id)\s*(?:->|references)\s*attempts\.(?:id|learner_id)",
-       rf"{ACT(r'(?:store|put|keep|add)')}{G}(?:all |five |twelve )?attempt ids{G}(?:learner row|learner record)")
+       rf"{ACT(r'(?:store|put|keep|add)')}{GN}(?:all |five |twelve )?attempt ids{GN}(?:learner row|learner record)")
 define("bad_orphan",
-       rf"{ACT(r'(?:allow|accept|store)')}{G}(?:orphan attempts|orphan references|attempts for nonexistent learners)")
+       rf"{ACT(r'(?:allow|accept|store)')}{GN}(?:orphan attempts|orphan references|attempts for nonexistent learners)")
 define("bad_gap",
-       rf"{ACT(r'(?:discard|delete|ignore)')}{G}(?:original |the )?gap",
-       rf"{ACT(r'(?:link|connect)')}{G}retry{G}unrelated gap",
-       rf"retry{G}{ACT(r'(?:proves|guarantees)')}{G}(?:understanding|mastery)")
+       rf"{ACT(r'(?:discard|delete|ignore)')}{GN}(?:original |the )?gap",
+       rf"{ACT(r'(?:link|connect)')}{GN}retry{GN}unrelated gap",
+       rf"retry{GN}{ACT(r'(?:proves|guarantees)')}{GN}(?:understanding|mastery)")
 define("bad_response",
-       rf"{ACT(r'(?:always return|always report)')}{G}success{G}(?:saving fails|save fails|failure)",
-       rf"{ACT(r'(?:return|send|respond with)')}{G}(?:http )?(?:400|401|403|404|500)\b{G}(?:successful creation|created successfully)",
-       rf"{ACT(r'(?:return|send)')}{G}(?:http )?202 accepted{G}(?:already created|creation completed)")
+       rf"{ACT(r'(?:always return|always report)')}{GN}success{GN}(?:saving fails|save fails|failure)",
+       rf"{ACT(r'(?:return|send|respond with)')}{GN}(?:http )?(?:400|401|403|404|500)\b{GN}(?:successful creation|created successfully)",
+       rf"{ACT(r'(?:return|send)')}{GN}(?:http )?202 accepted{GN}(?:already created|creation completed)")
 define("bad_729",
-       rf"(?:request|requested order){G}{ACT(r'(?:keep|keeps|target|targets|identify|identifies)')}{G}(?:order )?(?:4821|1729)\b",
-       rf"{ACT(r'(?:change|update)')}{G}only{G}(?:displayed label|label)",
-       rf"{ACT(r'(?:change|replace|set|switch)')}{G}(?:order id|order identifier|requested order){G}(?:to|with) (?!729\b)\d+\b")
-define("bad_body_required", rf"every request{G}(?:must|always){G}{ACT(r'(?:have|include|contain)')}{G}body")
+       rf"(?:request|requested order){GN}{ACT(r'(?:keep|keeps|target|targets|identify|identifies)')}{GN}(?:order )?(?:4821|1729)\b",
+       rf"{ACT(r'(?:change|update)')}{GN}only{GN}(?:displayed label|label)",
+       rf"{ACT(r'(?:change|replace|set|switch)')}{GN}(?:order id|order identifier|requested order){GN}(?:to|with) (?!729\b)\d+\b")
+define("bad_body_required", rf"every request{GN}(?:must|always){GN}{ACT(r'(?:have|include|contain)')}{GN}body")
 
 
 def match_facts(text):

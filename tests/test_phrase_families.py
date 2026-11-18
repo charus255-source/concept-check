@@ -43,3 +43,37 @@ class PhraseFamilyRegressions(unittest.TestCase):
     def test_graded_result_counts_ideas(self):
         result = verify(GOLDEN_PAIRS[4], "Save progress in a database.")
         self.assertEqual((result["status"], result["met"], result["total"]), ("NOT_YET", 1, 3))
+
+
+class ContradictionScope(unittest.TestCase):
+    def test_survive_in_a_later_clause_is_not_bad_advice(self):
+        for answer in ("Yes, memory is wiped on restart, so write the answer to the database so it survives the restart.",
+                       "A temporary variable is wiped on restart, so save the answer in a database so it survives a restart."):
+            with self.subTest(answer=answer):
+                self.assertEqual(verify(GOLDEN_PAIRS[17], answer)["contradictions"], [])
+
+    def test_variable_surviving_is_still_bad_advice(self):
+        for answer in ("A temporary variable survives a restart.", "Keep the progress in a global variable so it survives a refresh."):
+            with self.subTest(answer=answer):
+                self.assertNotEqual(verify(GOLDEN_PAIRS[4], answer)["contradictions"], [])
+
+
+class NegatedBadAdvice(unittest.TestCase):
+    def test_rejecting_the_browser_is_not_bad_advice(self):
+        answers = {
+            13: ["Store the key on the server, not in the browser. The browser calls the backend and the backend calls the API.",
+                 "Keep the key on the server and never in the frontend. The frontend calls our backend, which calls the provider API."],
+            3: ["Visitors can inspect the JavaScript and copy the key. Put the key on the server instead of in the browser; "
+                "the browser calls the backend, which calls the API."],
+            11: ["The server recalculates the price; it should not trust the browser-supplied price."],
+        }
+        for case_id, texts in answers.items():
+            for answer in texts:
+                with self.subTest(answer=answer):
+                    self.assertEqual(verify(GOLDEN_PAIRS[case_id], answer)["status"], "PASS")
+
+    def test_real_bad_advice_is_still_caught(self):
+        for answer in ("Keep the key in the browser, not on the server. The browser calls the backend and the backend calls the API.",
+                       "Store the private key in the browser."):
+            with self.subTest(answer=answer):
+                self.assertNotEqual(verify(GOLDEN_PAIRS[13], answer)["contradictions"], [])
