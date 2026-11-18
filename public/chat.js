@@ -114,6 +114,7 @@ function guide(kind) {
 function view() {
   const onWelcome = !$('welcome').hidden;
   document.body.classList.toggle('on-welcome', onWelcome);
+  if (onWelcome) document.querySelectorAll('.topic-card.selected').forEach(card => card.classList.remove('selected'));
   $('current-concept').textContent = onWelcome ? 'Choose a concept'
     : ideas.find(idea => idea[0] === state.idea)[1];
   $('concept-intro').hidden = onWelcome || $('messages').children.length > 0;
@@ -220,14 +221,35 @@ function closeNavigation() {
   $('menu').setAttribute('aria-expanded', 'false');
 }
 
+// Best result per concept: a pass wins, then "almost" (some ideas met), then not yet.
+function conceptStatus(id) {
+  const graded = state.attempts.filter(row => row.idea_id === id && typeof row.passed === 'boolean');
+  if (graded.some(row => row.passed)) return ['pass', 'Pass'];
+  if (graded.some(row => row.result && row.result.met > 0)) return ['almost', 'Almost'];
+  if (graded.length) return ['notyet', 'Not yet'];
+  return state.attempts.some(row => row.idea_id === id) ? ['practising', 'Practising'] : null;
+}
+
+function statusBadge(id) {
+  const status = conceptStatus(id);
+  return status ? element('span', 'status-badge ' + status[0], status[1]) : null;
+}
+
 function updateHistory() {
   const visited = [...new Set(state.attempts.map(row => row.idea_id))].filter(id => ideas.some(idea => idea[0] === id));
   $('history-count').textContent = visited.length;
+  document.querySelectorAll('.topic-card').forEach(card => {
+    card.querySelector('.status-badge')?.remove();
+    const badge = statusBadge(card.dataset.idea);
+    if (badge) card.querySelector('.topic-text strong').after(badge);
+  });
   if (!visited.length) return;
   $('history-nav').replaceChildren();
   for (const id of visited.reverse()) {
     const button = element('button', 'history-item' + (id === state.idea ? ' selected' : ''));
-    button.append(icon('chat'), element('span', '', ideas.find(idea => idea[0] === id)[2]));
+    button.append(icon('chat'), element('span', 'history-title', ideas.find(idea => idea[0] === id)[2]));
+    const badge = statusBadge(id);
+    if (badge) button.append(badge);
     button.addEventListener('click', () => selectIdea(id, true, true));
     $('history-nav').append(button);
   }

@@ -71,6 +71,14 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .history-item svg { width: 17px; height: 17px; color: var(--muted); }
 .history-item:hover { background: var(--surface); }
 .history-item.selected { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
+.history-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-badge { display: inline-block; flex-shrink: 0; padding: 3px 8px; border-radius: 99px; font: 600 10.5px/1.3 var(--mono);
+  letter-spacing: .06em; text-transform: uppercase; }
+.status-badge.pass { background: var(--pass-soft); color: var(--pass); }
+.status-badge.almost { background: var(--almost-soft); color: var(--almost); }
+.status-badge.notyet { background: var(--notyet-soft); color: var(--notyet); }
+.status-badge.practising { background: var(--surface-2); color: var(--muted); }
+.topic-text .status-badge { display: inline-block; margin: 4px 0 2px; font-size: 10.5px; }
 .empty-history { margin: 4px 6px; font-size: 13.5px; color: var(--muted); }
 .empty-history p { margin: 0 0 6px; }
 .side-note { margin-top: auto; display: flex; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
