@@ -116,13 +116,11 @@ function message(role, text, probeData, pending = false, custom = null) {
   } else if (custom) {
     content.append(custom);
   } else if (probeData) {
-    content.append(element('div', 'message-body', probeData.recited_sentence ? 'Let’s look a little closer at this part.' : 'Let’s take your reasoning a little further.'));
     if (probeData.recited_sentence) {
-      content.append(element('div', 'quote-label', 'In your words'));
+      content.append(element('div', 'quote-label', 'Let’s dig into this sentence'));
       content.append(element('blockquote', '', probeData.recited_sentence));
     }
     content.append(element('div', 'message-question', probeData.follow_up_question));
-    content.append(element('div', 'message-note', 'Think it through below. You can challenge the question, too.'));
   } else {
     content.append(element('div', 'message-body', text));
     if (role === 'assistant' && text === retryMessage) {

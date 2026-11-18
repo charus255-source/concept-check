@@ -152,7 +152,7 @@ body.on-welcome .composer-dock { display: none; }
 .message-name { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 9px 0 8px; }
 .message-body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
 .message.user .message-body { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
-.quote-label { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); margin: 14px 0 6px; }
+.quote-label { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); margin: 2px 0 8px; }
 .message blockquote { margin: 0; padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0;
   font-style: italic; color: var(--ink); overflow-wrap: anywhere; }
 .message-question { margin-top: 14px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px;
