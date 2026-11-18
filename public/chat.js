@@ -186,6 +186,14 @@ function resultCard(result) {
     if (result.contradictions.length) list.append(element('li', 'conflict', 'Part of your answer gives advice that would break this case.'));
     body.append(list);
   }
+  if (result.model_answer) {
+    // Shown only after grading: this case is never reused, so the answer cannot leak a test.
+    const model = element('details', 'model-answer');
+    model.append(element('summary', '', result.status === 'PASS' ? 'Compare with a model answer' : 'Show a model answer'));
+    model.append(element('p', '', result.model_answer));
+    if (result.status !== 'PASS') model.append(element('p', 'model-tip', 'Compare it with your answer: which idea in it did you leave out?'));
+    body.append(model);
+  }
   if (result.status !== 'PASS') {
     body.append(element('p', 'result-note', 'The checks can miss a correct answer written in unusual words. If you think yours is right, tell your trainer.'));
   }
@@ -197,7 +205,8 @@ function exportText(result) {
   const right = result.checks.filter(check => check.met).map(check => '✓ ' + check.feedback);
   const missing = result.checks.filter(check => !check.met).map(check => '• ' + check.feedback);
   return [result.message, right.length ? 'What you got right:\n' + right.join('\n') : '',
-    missing.length ? 'Still missing:\n' + missing.join('\n') : ''].filter(Boolean).join('\n\n');
+    missing.length ? 'Still missing:\n' + missing.join('\n') : '',
+    result.model_answer ? 'Model answer:\n' + result.model_answer : ''].filter(Boolean).join('\n\n');
 }
 
 function scrollToLatest() {

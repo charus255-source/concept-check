@@ -156,3 +156,23 @@ class ClarifyingQuestionTests(ApiTests):
         response = self.client.post("/api/assessment/answer", json={
             "challenge": case["challenge"], "answer": "Should we save progress in a database?"})
         self.assertEqual(response.json()["status"], "NOT_YET")
+
+
+class LearnFromResultTests(ApiTests):
+    def test_please_explain_is_a_question_not_an_answer(self):
+        case = self.client.post("/api/assessment/case", json={"idea_id": "API_REQUEST"}).json()
+        response = self.client.post("/api/assessment/answer", json={
+            "challenge": case["challenge"], "answer": "please explain the answer you gave"})
+        self.assertEqual(response.json()["status"], "QUESTION")
+        self.assertNotIn("model_answer", response.json())
+
+    def test_model_answer_only_after_grading(self):
+        case = self.client.post("/api/assessment/case", json={"idea_id": "API_REQUEST"}).json()
+        self.assertNotIn("model_answer", case)
+        self.assertNotIn("case_answer", case)
+        response = self.client.post("/api/assessment/answer", json={
+            "challenge": case["challenge"], "answer": "An API call carries an address, key, method and package."}).json()
+        self.assertEqual(response["status"], "NOT_YET")
+        self.assertIn("order identifier", response["model_answer"])
+        graded = [row for row in self.client.get("/api/history").json()["attempts"] if row["event_type"] == "graded"]
+        self.assertEqual(graded[0]["result"]["model_answer"], response["model_answer"])

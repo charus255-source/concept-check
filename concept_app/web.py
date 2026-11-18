@@ -245,6 +245,7 @@ def saved_result(row, case):
         result["met"], result["contradictions"] = result["total"], []
     result["status"] = "PASS" if row["passed"] else "NOT_YET"
     result["message"] = result_message(result)
+    result["model_answer"] = case["case_answer"]
     return result
 
 
@@ -412,7 +413,8 @@ class AssessmentRequest(BaseModel):
 
 QUESTION_START = re.compile(
     r"\s*(?:do|does|did|is|are|was|what|why|how|can|could|should|would|will|which|who|where|when|"
-    r"u mean|you mean|meaning|sorry|i don'?t (?:understand|get)|not sure what)\b", re.I)
+    r"u mean|you mean|meaning|sorry|i don'?t (?:understand|get|know)|i do not (?:understand|get|know)|not sure what|"
+    r"please|pls|plz|tell me|help|explain (?:the|your|it|this|that|me)|what'?s)\b", re.I)
 
 
 def is_question(answer):
@@ -470,5 +472,6 @@ def assessment_answer(payload: AssessmentRequest, request: Request, response: Re
         "passed": result["status"] == "PASS", "rule_version": result["rule_version"],
         "source_fingerprint": result["source_fingerprint"],
     })
+    # The case is graded and never reused, so its reviewed answer can now be shown.
     return {**result, "attempt_id": saved[0]["id"], "gap_id": gap_id,
-            "message": result_message(result)}
+            "message": result_message(result), "model_answer": case["case_answer"]}
