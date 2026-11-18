@@ -361,6 +361,10 @@ $('explanation').addEventListener('input', () => {
   $('explanation').style.height = 'auto';
   $('explanation').style.height = Math.min($('explanation').scrollHeight, 190) + 'px';
 });
+// Phones: keep the typing box in view when the keyboard opens.
+$('explanation').addEventListener('focus', () => {
+  setTimeout(() => $('chat-form').scrollIntoView({ block: 'end', behavior: 'smooth' }), 300);
+});
 $('explanation').addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
