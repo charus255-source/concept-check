@@ -94,6 +94,8 @@ function guide(kind) {
 function view() {
   const onWelcome = !$('welcome').hidden;
   document.body.classList.toggle('on-welcome', onWelcome);
+  $('current-concept').textContent = onWelcome ? 'Choose a concept'
+    : ideas.find(idea => idea[0] === state.idea)[1];
   $('concept-intro').hidden = onWelcome || $('messages').children.length > 0;
 }
 
