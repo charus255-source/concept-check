@@ -57,6 +57,12 @@ async function api(path, options = {}) {
   } finally { clearTimeout(timeout); }
 }
 
+// Jump into the typing box only with a mouse. On phones that would pop up the
+// keyboard and hide what the learner needs to read; they tap the box when ready.
+function softFocus(options) {
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) $('explanation').focus(options);
+}
+
 function showError(message) {
   $('error-text').textContent = message;
   $('error').hidden = false;
@@ -268,7 +274,7 @@ function selectIdea(id, restore = false, open = false) {
   guide(state.gap ? 'reflect' : restoredRows ? 'done' : 'start');
   updateHistory();
   closeNavigation();
-  $('explanation').focus({ preventScroll: true });
+  softFocus({ preventScroll: true });
   if (restore) scrollToLatest();
 }
 
@@ -299,7 +305,7 @@ ideas.forEach(([id, question, title], index) => {
   const text = element('span', 'topic-text');
   text.append(element('strong', '', title), element('span', '', question));
   card.append(element('span', 'topic-number', String(index + 1).padStart(2, '0')), text, icon('chevron'));
-  card.addEventListener('click', () => { selectIdea(id, true, true); $('explanation').focus(); window.scrollTo({ top: 0 }); });
+  card.addEventListener('click', () => { selectIdea(id, true, true); softFocus(); window.scrollTo({ top: 0 }); });
   $('topic-grid').append(card);
 });
 $('current-concept').textContent = ideas.find(idea => idea[0] === state.idea)[1];
@@ -347,7 +353,7 @@ async function requestAssessment(gapId) {
     }
   } finally {
     setBusy(false);
-    $('explanation').focus({ preventScroll: true });
+    softFocus({ preventScroll: true });
   }
 }
 
@@ -446,7 +452,7 @@ $('chat-form').addEventListener('submit', async event => {
     view();
   } finally {
     setBusy(false);
-    $('explanation').focus({ preventScroll: succeeded });
+    if (succeeded) softFocus({ preventScroll: true }); else $('explanation').focus();
   }
   // Selection has its own error handling: a saved retry must never be resubmitted
   // merely because requesting the next case failed. Release busy before entering.
