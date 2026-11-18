@@ -210,6 +210,17 @@ function exportText(result) {
     result.model_answer ? 'Model answer:\n' + result.model_answer : ''].filter(Boolean).join('\n\n');
 }
 
+// Show a new reply from its top, below the sticky header, so a long result card is
+// read from the start instead of being hidden behind the typing box.
+function scrollToRow(row) {
+  requestAnimationFrame(() => {
+    const header = document.querySelector('.topbar').offsetHeight + document.querySelector('.flow').offsetHeight;
+    const target = row.querySelector('.result-card, .case-card') || row;
+    window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - header - 8,
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  });
+}
+
 function scrollToLatest() {
   requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight,
     behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }));
@@ -444,12 +455,13 @@ $('chat-form').addEventListener('submit', async event => {
         : { idea_id: state.idea, explanation, gap_id: state.gap }),
     });
     pending.remove();
+    let resultRow = null;
     if (assessing && result.status === 'QUESTION') {
       // A clarifying question: not graded, the case stays open.
       message('assistant', result.message);
     } else if (assessing) {
       state.assessment = null;
-      message('assistant', exportText(result), null, false, resultCard(result));
+      resultRow = message('assistant', exportText(result), null, false, resultCard(result));
       if (assessing.phase === 'before') {
         message('assistant', 'Now explain the concept in your own words. We’ll ask one follow-up, then give you a different case.');
       }
@@ -474,7 +486,7 @@ $('chat-form').addEventListener('submit', async event => {
     $('explanation').dispatchEvent(new Event('input'));
     // History is a separate read: it must not hold the composer in its busy state.
     void refreshHistory();
-    scrollToLatest();
+    if (resultRow) scrollToRow(resultRow); else scrollToLatest();
   } catch (error) {
     pending.remove();
     userRow.remove();
