@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
-  <link rel="stylesheet" href="/static/styles.css?v=2">
-  <script src="/static/chat.js?v=2" defer></script>
+  <link rel="stylesheet" href="/static/styles.css?v=3">
+  <script src="/static/chat.js?v=3" defer></script>
 </head>
 <body>
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -92,6 +92,7 @@
   </section>
 
   <div class="composer-dock">
+    <p class="next-step" id="next-step" aria-live="polite"></p>
     <div class="error-banner" id="error" role="alert" hidden><span id="error-text"></span><button id="dismiss-error" type="button" aria-label="Dismiss error">×</button></div>
     <form id="chat-form" class="composer">
       <div class="composer-top">

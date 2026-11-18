@@ -72,6 +72,22 @@ function steps(stage) {
     : 'Your own words are the best place to start.';
 }
 
+// One clear instruction above the typing box, so the learner always knows what to do next.
+function guide(kind) {
+  const idea = ideas.find(item => item[0] === state.idea);
+  const question = idea[1].charAt(0).toLowerCase() + idea[1].slice(1);
+  const text = {
+    start: ['Step 1', 'Pick a concept above, then explain it in your own words in the box below.', `In my own words: ${question}`],
+    explain: ['Step 1', 'Now explain this concept in your own words in the box below.', `In my own words: ${question}`],
+    reflect: ['Your turn', 'Answer the question above. Type in the box below and press Enter.', 'Type your answer to the question…'],
+    case: ['Your turn', 'Solve the case above. Type your answer in the box below and press Enter.', 'Type your answer to the case…'],
+    done: ['Finished', 'Pick another concept on the left, or click “New conversation”.', 'Or explain this concept again…'],
+  }[kind];
+  $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
+  $('explanation').placeholder = text[2];
+  $('chat-form').classList.toggle('in-conversation', kind !== 'start');
+}
+
 function message(role, text, probeData, pending = false, custom = null) {
   $('welcome').hidden = true;
   const row = element('article', 'message ' + role);
@@ -183,6 +199,7 @@ function updateHistory() {
 
 function selectIdea(id, restore = false) {
   if (state.busy) return;
+  let restoredRows = 0;
   state.idea = id;
   state.gap = null;
   state.assessment = null;
@@ -198,7 +215,6 @@ function selectIdea(id, restore = false) {
   const idea = ideas.find(item => item[0] === id);
   $('current-concept').textContent = idea[1];
   document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === id));
-  $('explanation').placeholder = `In my own words: ${idea[1].charAt(0).toLowerCase() + idea[1].slice(1)}…`;
   if (restore) {
     const rows = state.attempts.filter(row => row.idea_id === id);
     for (const row of rows) {
@@ -224,8 +240,10 @@ function selectIdea(id, restore = false) {
       }
     }
     steps(state.gap ? 'reflect' : rows.length ? 'retry' : 'explain');
+    restoredRows = rows.length;
     $('assessment-actions').hidden = state.assessmentGap === null;
   }
+  guide(state.gap ? 'reflect' : restoredRows ? 'done' : 'start');
   updateHistory();
   closeNavigation();
   $('explanation').focus({ preventScroll: true });
@@ -264,6 +282,7 @@ ideas.forEach(([id, question, title], index) => {
 });
 document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === state.idea));
 $('current-concept').textContent = ideas.find(idea => idea[0] === state.idea)[1];
+guide('start');
 $('new-chat').addEventListener('click', () => {
   selectIdea(state.idea);
   $('explanation').value = '';
@@ -293,8 +312,8 @@ async function requestAssessment(gapId) {
     $('assessment-actions').hidden = true;
     message('assistant', 'Case: ' + result.case_question, null, false, caseCard(result.phase, result.case_question));
     $('explanation').value = '';
-    $('explanation').placeholder = 'Work through this case in your own words…';
-    $('composer-hint').textContent = 'Answer the case in your own words. Python checks it; the AI never grades.';
+    guide('case');
+    $('composer-hint').textContent = 'Python checks your answer. The AI never grades.';
     $('explanation').dispatchEvent(new Event('input'));
     scrollToLatest();
   } catch (error) {
@@ -380,7 +399,7 @@ $('chat-form').addEventListener('submit', async event => {
     }
     succeeded = true;
     $('explanation').value = '';
-    $('explanation').placeholder = state.gap ? 'Here’s what I think would happen…' : 'Try another explanation, or explore a different concept…';
+    guide(state.gap ? 'reflect' : assessing ? (assessing.phase === 'before' ? 'explain' : 'done') : 'explain');
     $('explanation').dispatchEvent(new Event('input'));
     // History is a separate read: it must not hold the composer in its busy state.
     void refreshHistory();
