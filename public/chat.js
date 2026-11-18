@@ -391,7 +391,10 @@ $('chat-form').addEventListener('submit', async event => {
         : { idea_id: state.idea, explanation, gap_id: state.gap }),
     });
     pending.remove();
-    if (assessing) {
+    if (assessing && result.status === 'QUESTION') {
+      // A clarifying question: not graded, the case stays open.
+      message('assistant', result.message);
+    } else if (assessing) {
       state.assessment = null;
       message('assistant', exportText(result), null, false, resultCard(result));
       message('assistant', assessing.phase === 'before'
@@ -414,7 +417,7 @@ $('chat-form').addEventListener('submit', async event => {
     }
     succeeded = true;
     $('explanation').value = '';
-    guide(state.gap ? 'reflect' : assessing ? (assessing.phase === 'before' ? 'explain' : 'done') : 'explain');
+    guide(state.assessment ? 'case' : state.gap ? 'reflect' : assessing ? (assessing.phase === 'before' ? 'explain' : 'done') : 'explain');
     $('explanation').dispatchEvent(new Event('input'));
     // History is a separate read: it must not hold the composer in its busy state.
     void refreshHistory();

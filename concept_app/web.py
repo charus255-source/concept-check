@@ -410,6 +410,17 @@ class AssessmentRequest(BaseModel):
     answer: str = Field(min_length=1, max_length=6000)
 
 
+QUESTION_START = re.compile(
+    r"\s*(?:do|does|did|is|are|was|what|why|how|can|could|should|would|will|which|who|where|when|"
+    r"u mean|you mean|meaning|sorry|i don'?t (?:understand|get)|not sure what)\b", re.I)
+
+
+def is_question(answer):
+    """A clarifying question typed into the case box, not an attempt at the case."""
+    text = answer.strip()
+    return len(text.split()) <= 40 and (text.endswith("?") or bool(QUESTION_START.match(text)))
+
+
 def result_message(result):
     if result["status"] == "PASS":
         return f"Pass. All {result['total']} ideas are covered."
@@ -446,6 +457,12 @@ def assessment_answer(payload: AssessmentRequest, request: Request, response: Re
         raise HTTPException(409, "This case has already been answered. Request another unseen case.")
     result = verify(case, payload.answer, quote_finder=lambda ideas: find_quotes(
         settings, case["case_question"], ideas, payload.answer))
+    if result["met"] == 0 and not result["contradictions"] and is_question(payload.answer):
+        # Not graded and not saved: the case stays open. Restate it, never hint at the answer.
+        return {"status": "QUESTION", "case_question": case["case_question"],
+                "message": "That sounds like a question, so it was not graded and nothing was saved. "
+                           "The case is asking:\n\n" + case["case_question"] +
+                           "\n\nAnswer it in your own words: what should happen, and why?"}
     # The unique index on (learner_id, case_id) for graded rows blocks simultaneous duplicates.
     saved = database(settings, "POST", "attempts", data={
         "learner_id": identity, "case_id": case["case_id"], "idea_id": case["idea_id"],

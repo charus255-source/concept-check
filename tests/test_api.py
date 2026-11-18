@@ -137,3 +137,22 @@ class HistoryDetailTests(ApiTests):
         self.db.tables["attempts"][-1]["rule_version"] = "1.0.2"
         graded = [row for row in self.client.get("/api/history").json()["attempts"] if row["event_type"] == "graded"]
         self.assertIsNone(graded[0]["result"])
+
+
+class ClarifyingQuestionTests(ApiTests):
+    def test_a_question_is_not_graded_and_the_case_stays_open(self):
+        case = self.client.post("/api/assessment/case", json={"idea_id": "API_REQUEST"}).json()
+        for question in ("do u mean the server sent tis to user that order id is not mentioned properly",
+                         "What do you mean by information?"):
+            response = self.client.post("/api/assessment/answer", json={"challenge": case["challenge"], "answer": question})
+            self.assertEqual(response.json()["status"], "QUESTION")
+        self.assertEqual([row for row in self.db.tables["attempts"] if row["event_type"] == "graded"], [])
+        answer = "The request should include the order ID 4821 in the URL so the server knows which order to fetch."
+        response = self.client.post("/api/assessment/answer", json={"challenge": case["challenge"], "answer": answer})
+        self.assertEqual(response.json()["status"], "PASS")
+
+    def test_an_answer_phrased_as_a_question_is_still_graded(self):
+        case = self.client.post("/api/assessment/case", json={"idea_id": "PERSISTENCE"}).json()
+        response = self.client.post("/api/assessment/answer", json={
+            "challenge": case["challenge"], "answer": "Should we save progress in a database?"})
+        self.assertEqual(response.json()["status"], "NOT_YET")
