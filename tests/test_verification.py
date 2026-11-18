@@ -233,7 +233,7 @@ class VerificationTests(unittest.TestCase):
     def test_incomplete_answers_report_missing_checks_for_every_case(self):
         incomplete = {
             1: "Users can inspect browser code.",
-            2: "The request should carry the order ID.",
+            2: "The request should carry the right headers.",
             3: GOLDEN_PAIRS[13]["case_answer"],
             4: "Save progress in a database and retrieve it on return.",
             5: "Each attempt has a learner_id referencing its learner.",

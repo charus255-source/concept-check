@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 
 @dataclass(frozen=True)
@@ -25,8 +25,10 @@ RULES = {
     1: rule([("browser_exposure", "Explain how users can inspect or alter browser rules."),
              ("server_rules", "Identify the backend's responsibility for the rules."),
              ("rule_benefit", "Explain centralization, consistent application, independent updates, or why browser rules cannot be the authority.")], ["bad_browser_trust"]),
-    2: rule([("request_order", "Identify the order information carried in the request."),
-             ("request_operation", "Connect that information to the requested operation.")], ["bad_body_required"]),
+    # Real learners answered "what should the request carry?" with the order ID and where it
+    # goes; requiring them to also name the operation rejected correct answers (1.2.0).
+    2: rule([("request_order", "Say what the request must carry: the order ID, e.g. in the URL path or a parameter.")],
+            ["bad_body_required"]),
     3: rule([("browser_exposure", "Explain how visitors can access browser-delivered code."),
              ("key_extraction", "Explain how visitors could extract the private key."),
              ("browser_backend", "Describe the browser calling the application backend."),

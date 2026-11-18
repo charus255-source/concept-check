@@ -58,18 +58,25 @@ questions; it was never used for grading and has been replaced.
 `evaluation/` holds answers a human labelled correct or incorrect.
 `scripts/measure_unfair_rate.py` reports the **unfair NOT YET rate** (correct answers
 not passed) and the **unsafe PASS rate** (incorrect answers passed), using the phrase
-rules only.
+rules only (the live quote check can only add passes it can prove).
 
-| Answer set | Before (rules 1.0.2) | After (rules 1.1.0) |
-|---|---|---|
-| `sample_answers.csv`: the trainer's 2 failing answers + 25 authored, used to write the new rules | 20 of 27 unfair | 0 of 27 unfair |
-| `heldout_answers.csv`: 16 correct answers written after the rules, never tuned on | 11 of 16 unfair | 5 of 16 unfair |
-| Incorrect answers in both sets | 0 of 20 passed | 0 of 20 passed |
+| Answer set | Rules 1.0.2 (before feedback) | Rules 1.1.0 | Rules 1.2.0 (now) |
+|---|---|---|---|
+| **`real_answers.csv`: 11 real learner answers from the live app** (no names; labelled by the builder against the golden answers) | **5 of 5 unfair** | **5 of 5 unfair** | **0 of 5 unfair** ¹ |
+| `sample_answers.csv`: the trainer's 2 failing answers + 25 authored | 20 of 27 unfair | 0 of 27 | 0 of 27 ¹ |
+| `heldout_answers.csv`: 16 authored answers never tuned on | 11 of 16 unfair | 5 of 16 | 5 of 16 |
+| Incorrect answers passed, all sets (26) | 0 | 0 | 0 |
 
-These are authored answers, not real learners. The held-out row is the honest
-number for the phrase rules; the quote check exists to close the rest of that gap.
-To measure on real learners: export answers (no names), label each one, save as CSV
-with columns `case_id,human_label,answer`, then run
+¹ Rules 1.2.0 were written from these answers, so this "after" number is optimistic.
+The held-out row is the honest estimate for unseen wording: phrase rules fix what they
+have seen. The next round of real learner answers is the true test.
+
+Version 1.2.0 also changed one rule: case 2 asks "what information should the request
+carry?", and real learners answered with the order ID and where it goes. Requiring them
+to also name the operation rejected correct answers, so that check was dropped.
+
+To measure on new real answers: export graded attempts from Supabase (no names), label
+each one, save as CSV with columns `case_id,human_label,answer`, then run
 `python scripts/measure_unfair_rate.py your_file.csv`.
 
 ## Run locally

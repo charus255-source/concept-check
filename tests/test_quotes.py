@@ -23,7 +23,7 @@ def greedy(answer):
 
 
 def labelled():
-    for name in ("sample_answers.csv", "heldout_answers.csv"):
+    for name in ("sample_answers.csv", "heldout_answers.csv", "real_answers.csv"):
         yield from csv.DictReader(open(ROOT / "evaluation" / name, encoding="utf-8"))
 
 

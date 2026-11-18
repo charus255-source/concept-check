@@ -24,7 +24,6 @@ from concept_app.probing import ProbingUnavailable, probe
 from concept_app.catalog import public_case
 from concept_app.quoting import find_quotes
 from concept_app.verification import verify, validate_source, VerificationUnavailable
-from concept_app.verification.rules import VERSION as RULE_VERSION
 
 ROOT = Path(__file__).resolve().parent.parent
 app = FastAPI(title="Concept Check", docs_url=None, redoc_url=None)
@@ -232,8 +231,9 @@ def history(request: Request, response: Response):
 def saved_result(row, case):
     """Rebuild the detail of a saved grade, so history shows what was right and missing.
 
-    Only for answers graded by the current rules; the saved pass/fail always wins."""
-    if row.get("rule_version") != RULE_VERSION or not case:
+    The saved pass/fail always wins. Answers graded before rule versions were stored
+    (no rule_version) show no detail."""
+    if not row.get("rule_version") or not case:
         return None
     try:
         result = verify(case, row["learner_response"])
@@ -243,8 +243,12 @@ def saved_result(row, case):
         for check in result["checks"]:
             check["met"] = True
         result["met"], result["contradictions"] = result["total"], []
+    regraded = not row["passed"] and result["status"] == "PASS"
     result["status"] = "PASS" if row["passed"] else "NOT_YET"
     result["message"] = result_message(result)
+    if regraded:
+        result["message"] = ("Not yet when you answered. The checks have since been made fairer, "
+                             "and this answer now covers every idea.")
     result["model_answer"] = case["case_answer"]
     return result
 

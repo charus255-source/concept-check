@@ -247,6 +247,28 @@ extend("followup_gap",
        rf"follow-up{G}{ACT(r'(?:store|stores|has|have|carries|includes|references)')}{G}(?:the |a )?gap(?:_id| id)?")
 
 
+# Version 1.2.0: phrase families from real learner answers (evaluation/real_answers.csv).
+ORDER = r"(?:order|oder|ordr|odrer)"
+extend("browser_exposure",
+       rf"{B}{G}(?:can|could|will|would) be {ACT(r'(?:manipulated|changed|edited|modified|tampered with|altered|faked|fudged)')}",
+       rf"(?:users?|customers?|visitors?|anyone){G}{ACT(r'(?:manipulate|manipulates|fudge|fudges|tamper|tampers)')}{G}(?:{B}|data|rules|price|discount|code)")
+extend("server_rules",
+       rf"(?:rules|logic|calculation|pricing){G}(?:should|must|need to|needs to|has to|have to)\s+(?:be|live|stay|run|happen)\s+(?:in|on|at)\s+(?:the\s+)?{S}",
+       rf"(?:critical|business|pricing|discount)\s+(?:logic|rules)\s+(?:must|should)\s+{ACT(r'(?:happen|run|live|be)')}\s+(?:in|on)\s+(?:the\s+)?{S}")
+extend("rule_benefit",
+       rf"(?:determined|decided|controlled|set)\s+by\s+(?:the\s+)?(?:company|business|server|backend)",
+       rf"{ACT(r'(?:keep|keeps|keeping)')}{G}away\s+from\s+(?:the\s+)?(?:users?|client|browser)")
+extend("trusted_price",
+       rf"(?:critical|business|pricing|price)\s+(?:logic|rules|calculation)\s+(?:must|should)\s+{ACT(r'(?:happen|run|live|be)')}\s+(?:in|on)\s+(?:the\s+)?{S}")
+extend("not_browser_price",
+       rf"(?:never|not|do not|don't)\s+{ACT(r'trust')}\s+(?:the\s+)?(?:client|browser|frontend|user input|user)", negative=True)
+extend("independent_query",
+       rf"(?:allow|allows|allowing|let|lets|letting|enable|enables|enabling){G}{ACT(r'(?:filter|count|query|group|sort)')}")
+extend("request_order",
+       rf"{ORDER}\s?(?:id|identifier|number){G}(?:path|url|query|param\w*|parameter|body|json|payload|package)",
+       rf"(?:path|url|query|param\w*|parameter|body|json|payload|package){G}{ORDER}\s?(?:id|identifier|number)")
+
+
 # Recognized contradictions are independently matched, including appended bad advice.
 define("bad_key_browser",
        rf"{ACT(SAVE)}{GN}{K}{GN}\b(?:in|on|to)\b{GN}(?:browser|frontend|front end|client-side code)",

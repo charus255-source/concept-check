@@ -1,0 +1,15 @@
+case_id,human_label,source,answer
+11,correct,real learner (Supabase attempt 7),"To ensure the final price is legitimate, the system must follow a fundamental rule of web security: never trust the client. Because users can easily manipulate the browser's frontend data using Developer Tools or extensions, all critical logic must happen on the backend."
+16,incorrect,real learner (Supabase attempt 13),it will not be easy to read
+16,correct,real learner (Supabase attempt 18),"Each attempt should be stored as a separate row. Each row can have its own date and result, allowing the system to filter attempts by Monday and count only failed attempts."
+14,incorrect,real learner (Supabase attempt 25),"Save data locally or remotely
+
+Depending on whether the app works offline or requires an account, developers use one of two primary strategies:
+• Local Persistence: Save the progress directly onto the user's device. If the app is closed or the device restarts, the data remains. Common tools include SQLite, Room (Android), CoreData (iOS), or key-value storage like PreferencesDataStore / NSUserDefaults for simple progress states."
+13,incorrect,real learner (Supabase attempt 35),"To prevent exposing a private API key to website visitors, you must never call the third-party API directly from the browser (frontend)"
+1,incorrect,real learner (Supabase attempt 43),developer has to put the rules in backend server as code
+3,incorrect,real learner (Supabase attempt 47),so it means many be the api key can be used for tokens consumption of llm
+1,correct,real learner (Supabase attempt 48),"DDISCOUNT rules should be in backend, as they have to be fixed and shoudnt be fudged with. If they are sent tio user browser they can be manipulated and If the manupulated discount rate calculation is sent back to server to use then user can get prices as per him rather than rules. A backend helps keep all of this away from user and changes unless the company intends and so the order pricing is determined by the company"
+1,incorrect,real learner (Supabase attempt 55),Backend can apply rules
+2,correct,real learner (Supabase attempt 58),It should have trhe oder ID either as either in path or as query paramater
+2,correct,real learner (Supabase attempt 62),Order Id in the package as JSON key and value

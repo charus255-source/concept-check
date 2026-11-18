@@ -132,11 +132,19 @@ class HistoryDetailTests(ApiTests):
         self.assertEqual((result["status"], result["met"], result["total"]), ("NOT_YET", 1, 3))
         self.assertEqual(result["message"], "Almost there. You covered 1 of 3 ideas.")
 
-    def test_answers_graded_by_older_rules_show_no_details(self):
+    def test_answers_without_a_rule_version_show_no_details(self):
         self.answer("BACKEND_PURPOSE", "developer has to put the rules in backend server as code")
-        self.db.tables["attempts"][-1]["rule_version"] = "1.0.2"
+        self.db.tables["attempts"][-1]["rule_version"] = None
         graded = [row for row in self.client.get("/api/history").json()["attempts"] if row["event_type"] == "graded"]
         self.assertIsNone(graded[0]["result"])
+
+    def test_an_answer_the_fairer_rules_now_pass_says_so_but_stays_not_yet(self):
+        self.answer("API_REQUEST", "Order Id in the package as JSON key and value")
+        row = self.db.tables["attempts"][-1]
+        row["passed"], row["rule_version"] = False, "1.1.0"   # graded by the stricter rules
+        graded = [r for r in self.client.get("/api/history").json()["attempts"] if r["event_type"] == "graded"]
+        self.assertEqual(graded[0]["result"]["status"], "NOT_YET")
+        self.assertIn("made fairer", graded[0]["result"]["message"])
 
 
 class ClarifyingQuestionTests(ApiTests):
