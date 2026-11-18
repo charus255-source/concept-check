@@ -82,10 +82,17 @@ function guide(kind) {
     explain: ['Step 1', 'Now explain the concept in your own words below, then press Enter.', `In my own words: ${question}`],
     reflect: ['Your turn', 'Answer the question above, then press Enter.', 'Type your answer to the question…'],
     case: ['Your turn', 'Solve the case above, then press Enter.', 'Type your answer to the case…'],
-    done: ['Finished', 'Tap “New conversation” to pick another concept.', 'Or explain this concept again…'],
+    done: ['Finished', 'Your result is saved.', 'Or explain this concept again…'],
   }[kind];
   if (kind === 'done') steps('done');
   $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
+  if (kind === 'done') {
+    // Visible on phones too, where "New conversation" sits inside the menu.
+    const next = element('button', 'next-concept', 'Pick another concept →');
+    next.type = 'button';
+    next.addEventListener('click', () => $('new-chat').click());
+    $('next-step').append(next);
+  }
   $('explanation').placeholder = text[2];
   $('chat-form').classList.toggle('in-conversation', kind !== 'start');
 }
@@ -401,9 +408,9 @@ $('chat-form').addEventListener('submit', async event => {
     } else if (assessing) {
       state.assessment = null;
       message('assistant', exportText(result), null, false, resultCard(result));
-      message('assistant', assessing.phase === 'before'
-        ? 'Now explain the concept in your own words. We’ll explore one follow-up before a different case.'
-        : 'Your case answer and its result are saved. You can explore another concept.');
+      if (assessing.phase === 'before') {
+        message('assistant', 'Now explain the concept in your own words. We’ll ask one follow-up, then give you a different case.');
+      }
       steps('explain');
     } else if (result.stage === 'retry') {
       message('assistant', result.message);

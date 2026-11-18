@@ -1,0 +1,1 @@
+  await p.click(".next-concept"); await p.waitForTimeout(300); console.log("welcome visible:", await p.isVisible("
