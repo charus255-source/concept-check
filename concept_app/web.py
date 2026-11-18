@@ -365,7 +365,7 @@ def next_step(settings, identity, idea_id):
     open_ideas = [IDEAS[idea] for idea in IDEAS if idea != idea_id and any(
         case["idea_id"] == idea and case["case_id"] not in seen for case in cases)]
     if not open_ideas:
-        return "You have answered every case. Well done. Your results are saved in your history."
+        return "You have answered every case. Your results are saved in your history."
     return ("You have answered every case for this concept, and answered cases are not reused. "
             "Next, try: " + "; ".join(open_ideas[:3]) + ".")
 

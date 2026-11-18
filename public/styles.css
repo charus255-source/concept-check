@@ -210,6 +210,9 @@ body.on-welcome .composer-dock { display: none; }
 .next-concept { display: block; margin-top: 10px; width: 100%; padding: 10px 14px; border: 0; border-radius: 10px;
   background: var(--accent); color: #fff; font-weight: 600; font-size: 15px; }
 .next-concept:hover { background: var(--accent-ink); }
+.next-link { display: block; margin: 8px auto 0; border: 0; background: transparent; color: inherit; opacity: .8;
+  font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.next-link:hover { opacity: 1; }
 .next-step { margin: 0 0 8px; padding: 10px 14px; border-radius: 12px; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 500; }
 .next-step b { display: inline-block; margin-right: 10px; padding: 3px 8px; border-radius: 6px; background: var(--accent); color: #fff;
   font: 600 11px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; vertical-align: 1px; }

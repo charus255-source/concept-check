@@ -13,7 +13,7 @@ const ideas = [
   ['RETRY_GAP', 'Why should a retry point to its gap?', 'Close the gap'],
 ];
 const $ = id => document.getElementById(id);
-const state = { idea: 'API_AUTH', gap: null, busy: false, attempts: [], export: [], ready: false,
+const state = { lastPassed: null, idea: 'API_AUTH', gap: null, busy: false, attempts: [], export: [], ready: false,
   assessment: null, assessmentGap: null };
 const retryMessage = '✓ Your second try is saved. Practice is not graded: a new case will show whether it clicked.';
 
@@ -89,7 +89,10 @@ function guide(kind) {
     reflect: ['Your turn', 'Answer the question above, then press Enter.', 'Type your answer to the question…'],
     case: ['Your turn', 'Solve the case above, then press Enter.', 'Type your answer to the case…'],
     retry: ['Step 3', 'Ready? Your new case checks what you worked out.', 'Or explain this concept again…'],
-    done: ['Finished', 'Your result is saved.', 'Or explain this concept again…'],
+    done: state.lastPassed
+      ? ['Well done', 'You explained it and applied it to a new case. Your result is saved.', 'Or explain this concept again…']
+      : ['Not yet', 'That is how learning starts. Open the model answer above, compare it with yours, then explain it again in your own words.', 'Explain it again, in your own words…'],
+    nocase: ['Practice saved', 'You have used both cases for this concept. You can still explain it again below for practice.', 'Explain it again, in your own words…'],
   }[kind];
   if (kind === 'done') steps('done');
   $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
@@ -99,12 +102,22 @@ function guide(kind) {
     next.addEventListener('click', () => { void requestAssessment(state.assessmentGap); });
     $('next-step').append(next);
   }
-  if (kind === 'done') {
+  const pickAnother = (className, label) => {
     // Visible on phones too, where "New conversation" sits inside the menu.
-    const next = element('button', 'next-concept', 'Pick another concept →');
+    const next = element('button', className, label);
     next.type = 'button';
     next.addEventListener('click', () => $('new-chat').click());
     $('next-step').append(next);
+  };
+  if (kind === 'done' && !state.lastPassed) {
+    // After a Not yet, the learning loop comes first: compare, then explain again.
+    const again = element('button', 'next-concept', 'Explain it again →');
+    again.type = 'button';
+    again.addEventListener('click', () => { steps('explain'); guide('explain'); $('explanation').focus(); });
+    $('next-step').append(again);
+    pickAnother('next-link', 'or pick another concept');
+  } else if (kind === 'done' || kind === 'nocase') {
+    pickAnother('next-concept', 'Pick another concept →');
   }
   $('explanation').placeholder = text[2];
   $('chat-form').classList.toggle('in-conversation', kind !== 'start');
@@ -293,6 +306,7 @@ function selectIdea(id, restore = false, open = false) {
       }
       message('user', row.learner_response);
       if (typeof row.passed === 'boolean') {
+        state.lastPassed = row.passed;
         if (row.result) message('assistant', exportText(row.result), null, false, resultCard(row.result));
         else message('assistant', row.passed ? 'Pass. All the ideas for this case were covered.'
           : 'Not yet. This answer was checked with an older version of the rules, so the details are not available.');
@@ -391,6 +405,12 @@ async function requestAssessment(gapId) {
     $('explanation').dispatchEvent(new Event('input'));
     scrollToLatest();
   } catch (error) {
+    if (error.status === 409 && /no unseen case|answered every case/i.test(error.message)) {
+      message('assistant', error.message);
+      guide('nocase');
+      scrollToLatest();
+      return;
+    }
     showError(error.message);
     if (error.status === 401) state.ready = false;
     if (gapId !== null || state.assessment) {
@@ -461,6 +481,7 @@ $('chat-form').addEventListener('submit', async event => {
       message('assistant', result.message);
     } else if (assessing) {
       state.assessment = null;
+      state.lastPassed = result.status === 'PASS';
       resultRow = message('assistant', exportText(result), null, false, resultCard(result));
       if (assessing.phase === 'before') {
         message('assistant', 'Now explain the concept in your own words. We’ll ask one follow-up, then give you a different case.');
