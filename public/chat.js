@@ -77,15 +77,22 @@ function guide(kind) {
   const idea = ideas.find(item => item[0] === state.idea);
   const question = idea[1].charAt(0).toLowerCase() + idea[1].slice(1);
   const text = {
-    start: ['Step 1', 'Pick a concept above, then explain it in your own words in the box below.', `In my own words: ${question}`],
-    explain: ['Step 1', 'Now explain this concept in your own words in the box below.', `In my own words: ${question}`],
+    start: ['Step 1', `Explain “${idea[1]}” in your own words. Type below and press Enter.`, `In my own words: ${question}`],
+    explain: ['Step 1', `Now explain “${idea[1]}” in your own words. Type below and press Enter.`, `In my own words: ${question}`],
     reflect: ['Your turn', 'Answer the question above. Type in the box below and press Enter.', 'Type your answer to the question…'],
     case: ['Your turn', 'Solve the case above. Type your answer in the box below and press Enter.', 'Type your answer to the case…'],
-    done: ['Finished', 'Pick another concept on the left, or click “New conversation”.', 'Or explain this concept again…'],
+    done: ['Finished', 'Click “New conversation” (top left) to pick another concept.', 'Or explain this concept again…'],
   }[kind];
   $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
   $('explanation').placeholder = text[2];
   $('chat-form').classList.toggle('in-conversation', kind !== 'start');
+}
+
+// Start screen shows only concept cards; the typing box appears once a concept is open.
+function view() {
+  const onWelcome = !$('welcome').hidden;
+  document.body.classList.toggle('on-welcome', onWelcome);
+  $('concept-intro').hidden = onWelcome || $('messages').children.length > 0;
 }
 
 function message(role, text, probeData, pending = false, custom = null) {
@@ -120,6 +127,7 @@ function message(role, text, probeData, pending = false, custom = null) {
   }
   row.append(avatar, content);
   $('messages').append(row);
+  view();
   if (!pending) state.export.push({ role, text: custom ? text : probeData
     ? [probeData.recited_sentence, probeData.follow_up_question].filter(Boolean).join('\n\n') : text });
   return row;
@@ -192,12 +200,12 @@ function updateHistory() {
   for (const id of visited.reverse()) {
     const button = element('button', 'history-item' + (id === state.idea ? ' selected' : ''));
     button.append(icon('chat'), element('span', '', ideas.find(idea => idea[0] === id)[2]));
-    button.addEventListener('click', () => selectIdea(id, true));
+    button.addEventListener('click', () => selectIdea(id, true, true));
     $('history-nav').append(button);
   }
 }
 
-function selectIdea(id, restore = false) {
+function selectIdea(id, restore = false, open = false) {
   if (state.busy) return;
   let restoredRows = 0;
   state.idea = id;
@@ -214,6 +222,7 @@ function selectIdea(id, restore = false) {
   steps('explain');
   const idea = ideas.find(item => item[0] === id);
   $('current-concept').textContent = idea[1];
+  $('intro-title').textContent = idea[1];
   document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === id));
   if (restore) {
     const rows = state.attempts.filter(row => row.idea_id === id);
@@ -243,6 +252,8 @@ function selectIdea(id, restore = false) {
     restoredRows = rows.length;
     $('assessment-actions').hidden = state.assessmentGap === null;
   }
+  if (open) $('welcome').hidden = true;
+  view();
   guide(state.gap ? 'reflect' : restoredRows ? 'done' : 'start');
   updateHistory();
   closeNavigation();
@@ -277,12 +288,12 @@ ideas.forEach(([id, question, title], index) => {
   const text = element('span', 'topic-text');
   text.append(element('strong', '', title), element('span', '', question));
   card.append(element('span', 'topic-number', String(index + 1).padStart(2, '0')), text, icon('chevron'));
-  card.addEventListener('click', () => { selectIdea(id, true); $('explanation').focus(); });
+  card.addEventListener('click', () => { selectIdea(id, true, true); $('explanation').focus(); window.scrollTo({ top: 0 }); });
   $('topic-grid').append(card);
 });
-document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === state.idea));
 $('current-concept').textContent = ideas.find(idea => idea[0] === state.idea)[1];
 guide('start');
+view();
 $('new-chat').addEventListener('click', () => {
   selectIdea(state.idea);
   $('explanation').value = '';
@@ -414,7 +425,7 @@ $('chat-form').addEventListener('submit', async event => {
       $('assessment-actions').hidden = false;
       $('fresh-case').textContent = 'Request a case again';
     }
-    if (!$('messages').children.length) $('welcome').hidden = false;
+    view();
   } finally {
     setBusy(false);
     $('explanation').focus({ preventScroll: succeeded });

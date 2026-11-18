@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
-  <link rel="stylesheet" href="/static/styles.css?v=3">
-  <script src="/static/chat.js?v=3" defer></script>
+  <link rel="stylesheet" href="/static/styles.css?v=4">
+  <script src="/static/chat.js?v=4" defer></script>
 </head>
 <body>
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -67,19 +67,24 @@
     <div class="welcome" id="welcome">
       <span class="label">Hackathon · Concept Check</span>
       <h1>Explain it. Then prove it.</h1>
-      <p class="intro">Saying the right words is not the same as understanding. Explain a concept in your own words. We point at the sentence that sounds memorised and ask what breaks. Then you solve a case you have not seen.</p>
+      <p class="intro">Pick a concept to start. You explain it in your own words, answer one question, then solve a case you have not seen.</p>
+
+      <h2 class="section-title">Choose a concept</h2>
+      <div class="topic-grid" id="topic-grid"></div>
 
       <ol class="how">
         <li><b>1</b><div><strong>Explain in your words</strong><span>Like you would to a friend. No perfect wording needed.</span></div></li>
         <li><b>2</b><div><strong>Answer one question</strong><span>About the sentence that sounds recited.</span></div></li>
         <li><b>3</b><div><strong>Solve a fresh case</strong><span>Python checks it against the answer key. The AI never grades.</span></div></li>
       </ol>
+    </div>
 
-      <h2 class="section-title">Choose a concept</h2>
-      <div class="topic-grid" id="topic-grid"></div>
-
+    <div class="concept-intro" id="concept-intro" hidden>
+      <span class="label">You picked</span>
+      <h2 id="intro-title">How does an app remember?</h2>
+      <p>Explain it in the box below, in your own words, like you would to a friend. There is no perfect wording.</p>
       <div class="baseline">
-        <div><strong>Want a before-and-after?</strong><span>Try a case first, so you can see the change after practice.</span></div>
+        <div><strong>Optional: try a case first</strong><span>Answer a case before practising, so you can see the change after.</span></div>
         <button class="secondary-button" id="baseline-case" type="button"><svg><use href="#i-target"/></svg>Try a case first</button>
       </div>
     </div>
