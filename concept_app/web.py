@@ -7,7 +7,9 @@ import json
 import logging
 import re
 import secrets
+import threading
 import time
+from collections import defaultdict, deque
 from pathlib import Path
 
 import requests
@@ -20,6 +22,7 @@ from concept_app.catalog import IDEAS
 from concept_app.config import Settings
 from concept_app.probing import ProbingUnavailable, probe
 from concept_app.catalog import public_case
+from concept_app.quoting import find_quotes
 from concept_app.verification import verify, validate_source, VerificationUnavailable
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,6 +46,13 @@ def configuration():
         return Settings.load()
     except ValueError:
         raise HTTPException(503, "The learning service is not configured yet.") from None
+
+
+class DuplicateRow(HTTPException):
+    """A unique constraint rejected the write (for example, a second graded answer)."""
+
+    def __init__(self):
+        super().__init__(409, "This case has already been answered. Request another unseen case.")
 
 
 class DatabaseUnavailable(HTTPException):
@@ -99,6 +109,8 @@ def database(settings, method, table, *, params=None, data=None):
                     code = candidate
             except (ValueError, AttributeError):
                 pass
+        if status == 409 and code == "23505":
+            raise DuplicateRow() from None
         number = network_error_number(exc)
         category = (
             "network_permission" if number else
@@ -113,9 +125,35 @@ def database(settings, method, table, *, params=None, data=None):
         raise DatabaseUnavailable(category) from None
 
 
+# Per-instance limits. Serverless instances do not share memory, so this bounds
+# bursts on each instance; a shared store (for example Upstash) is needed for a global cap.
+LIMITS = {"session": (10, 3600), "check": (30, 3600), "case": (60, 3600), "answer": (40, 3600)}
+_hits = defaultdict(deque)
+_hits_lock = threading.Lock()
+
+
+def client_address(request):
+    forwarded = request.headers.get("x-forwarded-for", "")
+    return forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+
+
+def rate_limit(request, bucket):
+    limit, window = LIMITS[bucket]
+    key = (bucket, client_address(request))
+    now = time.monotonic()
+    with _hits_lock:
+        hits = _hits[key]
+        while hits and hits[0] <= now - window:
+            hits.popleft()
+        if len(hits) >= limit:
+            raise HTTPException(429, "Too many requests from this connection. Please wait a while and try again.")
+        hits.append(now)
+
+
 def signed_identity(learner_id, settings):
     value = str(learner_id)
-    signature = hmac.new(settings.supabase_service_key.encode(), value.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(settings.session_secret.encode(), ("session.v2." + value).encode(),
+                         hashlib.sha256).hexdigest()
     return value + "." + signature
 
 
@@ -148,6 +186,7 @@ def start_session(request: Request, response: Response):
     settings = configuration()
     identity = learner(request, settings)
     if identity is None:
+        rate_limit(request, "session")
         identity = database(settings, "POST", "learners", data={
             "learner_name": "Learner " + secrets.token_hex(8),
         })[0]["id"]
@@ -165,7 +204,7 @@ def history(request: Request, response: Response):
     response.headers["Cache-Control"] = "no-store"
     rows = database(settings, "GET", "attempts", params={
         "learner_id": "eq." + str(identity), "order": "created_at.asc,id.asc",
-        "select": "id,case_id,gap_id,learner_response,recited_sentence,passed,created_at",
+        "select": "id,case_id,idea_id,event_type,gap_id,learner_response,recited_sentence,passed,created_at",
         "limit": "500",
     })
     if not rows:
@@ -178,7 +217,10 @@ def history(request: Request, response: Response):
     }) if rows else []
     gap_map = {row["attempt_id"]: row for row in gaps}
     for row in rows:
-        row.update(case_map.get(row["case_id"], {}))
+        case = case_map.get(row["case_id"], {})
+        row["idea_id"] = row.get("idea_id") or case.get("idea_id")
+        # Practice events are not answers to a case, so they show no case question.
+        row["case_question"] = case.get("case_question") if row.get("event_type") == "graded" else None
         row["probe"] = gap_map.get(row["id"])
     return {"attempts": rows}
 
@@ -201,42 +243,25 @@ def check_explanation(payload: ExplanationRequest, request: Request, response: R
     if payload.idea_id not in IDEAS:
         raise HTTPException(422, "Choose a Module 2 concept.")
     if payload.gap_id is not None:
-        gaps = database(settings, "GET", "gaps", params={
-            "id": "eq." + str(payload.gap_id), "select": "attempt_id,follow_up_question",
-        })
-        if not gaps:
-            raise HTTPException(404, "The follow-up could not be found.")
-        originals = database(settings, "GET", "attempts", params={
-            "id": "eq." + str(gaps[0]["attempt_id"]),
-            "learner_id": "eq." + str(identity), "select": "case_id",
-        })
-        if not originals:
-            raise HTTPException(404, "The follow-up could not be found.")
-        cases = database(settings, "GET", "cases", params={
-            "case_id": "eq." + str(originals[0]["case_id"]),
-            "idea_id": "eq." + payload.idea_id, "select": "case_id,case_question",
-        })
-        if not cases:
+        original = owned_gap(settings, identity, payload.gap_id)
+        if original["idea_id"] != payload.idea_id:
             raise HTTPException(422, "This follow-up belongs to a different concept.")
+        # A second try is practice: it answers the follow-up, not a case.
         saved = database(settings, "POST", "attempts", data={
-            "learner_id": identity, "case_id": cases[0]["case_id"],
+            "learner_id": identity, "idea_id": payload.idea_id, "event_type": "retry",
             "gap_id": payload.gap_id, "learner_response": explanation, "passed": None,
         })
         return {"attempt_id": saved[0]["id"], "stage": "retry",
                 "message": "Your second try is saved as practice. Now apply your reasoning to a different case.",
                 "gap_id": payload.gap_id, "assessed": False}
-    cases = database(settings, "GET", "cases", params={
-        "idea_id": "eq." + payload.idea_id, "select": "case_id,case_question",
-        "order": "case_id.asc", "limit": "1",
-    })
-    if not cases:
-        raise HTTPException(409, "There is no learning case for this concept yet.")
+    rate_limit(request, "check")
     try:
         result = probe(settings, payload.idea_id, explanation)
     except ProbingUnavailable as exc:
         raise HTTPException(503, str(exc)) from None
+    # An explanation is its own event type. It is not tied to a case the learner never saw.
     saved = database(settings, "POST", "attempts", data={
-        "learner_id": identity, "case_id": cases[0]["case_id"],
+        "learner_id": identity, "idea_id": payload.idea_id, "event_type": "explanation",
         "learner_response": explanation, "recited_sentence": result["recited_sentence"],
         "passed": None,
     })
@@ -256,7 +281,7 @@ def owned_gap(settings, identity, gap_id):
     if gaps:
         originals = database(settings, "GET", "attempts", params={
             "id": "eq." + str(gaps[0]["attempt_id"]), "learner_id": "eq." + str(identity),
-            "select": "id,case_id", "limit": "1",
+            "select": "id,idea_id", "limit": "1",
         })
         if originals:
             return originals[0]
@@ -271,8 +296,8 @@ def reviewed_source(case):
 
 
 def challenge_signature(encoded, settings):
-    return hmac.new(settings.supabase_service_key.encode(),
-                    ("assessment.v1." + encoded).encode(), hashlib.sha256).hexdigest()
+    return hmac.new(settings.session_secret.encode(),
+                    ("assessment.v2." + encoded).encode(), hashlib.sha256).hexdigest()
 
 
 def issue_challenge(settings, identity, case, gap_id):
@@ -305,36 +330,53 @@ class CaseRequest(BaseModel):
     gap_id: int | None = Field(default=None, gt=0)
 
 
+def next_step(settings, identity, idea_id):
+    """When a concept runs out of fresh cases, name the concepts that still have one."""
+    cases = database(settings, "GET", "cases", params={"select": "case_id,idea_id"})
+    seen = graded_case_ids(settings, identity)
+    open_ideas = [IDEAS[idea] for idea in IDEAS if idea != idea_id and any(
+        case["idea_id"] == idea and case["case_id"] not in seen for case in cases)]
+    if not open_ideas:
+        return "You have answered every case. Well done. Your results are saved in your history."
+    return ("You have answered every case for this concept, and answered cases are not reused. "
+            "Next, try: " + "; ".join(open_ideas[:3]) + ".")
+
+
+def graded_case_ids(settings, identity):
+    seen = database(settings, "GET", "attempts", params={
+        "learner_id": "eq." + str(identity), "event_type": "eq.graded", "select": "case_id",
+    })
+    return {row["case_id"] for row in seen}
+
+
 @app.post("/api/assessment/case")
 def assessment_case(payload: CaseRequest, request: Request, response: Response):
     check_origin(request)
     settings = configuration()
     identity = require_learner(request, settings)
+    rate_limit(request, "case")
     response.headers["Cache-Control"] = "no-store"
+    if payload.idea_id not in IDEAS:
+        raise HTTPException(422, "Choose a Module 2 concept.")
     cases = database(settings, "GET", "cases", params={
         "idea_id": "eq." + payload.idea_id, "select": SOURCE_FIELDS, "order": "case_id.asc",
     })
     if not cases:
         raise HTTPException(404, "No authoritative cases are available for this idea.")
-    original_case = None
     if payload.gap_id is not None:
         original = owned_gap(settings, identity, payload.gap_id)
-        if original["case_id"] not in {case["case_id"] for case in cases}:
+        if original["idea_id"] != payload.idea_id:
             raise HTTPException(422, "The gap belongs to a different concept.")
-        original_case = original["case_id"]
         retries = database(settings, "GET", "attempts", params={
             "gap_id": "eq." + str(payload.gap_id), "learner_id": "eq." + str(identity),
-            "id": "neq." + str(original["id"]), "passed": "is.null", "select": "id", "limit": "1",
+            "event_type": "eq.retry", "select": "id", "limit": "1",
         })
         if not retries:
             raise HTTPException(409, "Save your second try before requesting the after-practice case.")
-    seen = database(settings, "GET", "attempts", params={
-        "learner_id": "eq." + str(identity), "passed": "not.is.null", "select": "case_id",
-    })
-    seen_ids = {row["case_id"] for row in seen}
-    candidates = [case for case in cases if case["case_id"] not in seen_ids and case["case_id"] != original_case]
+    seen_ids = graded_case_ids(settings, identity)
+    candidates = [case for case in cases if case["case_id"] not in seen_ids]
     if not candidates:
-        raise HTTPException(409, "You have no unseen case left for this concept. Previously answered cases will not be reused as fresh proof.")
+        raise HTTPException(409, next_step(settings, identity, payload.idea_id))
     case = candidates[0]
     return {**public_case(case), "challenge": issue_challenge(settings, identity, case, payload.gap_id),
             "phase": "after" if payload.gap_id is not None else "before"}
@@ -345,11 +387,23 @@ class AssessmentRequest(BaseModel):
     answer: str = Field(min_length=1, max_length=6000)
 
 
+def result_message(result):
+    if result["status"] == "PASS":
+        return f"Pass. All {result['total']} ideas are covered."
+    if result["contradictions"]:
+        return (f"Not yet. You covered {result['met']} of {result['total']} ideas, "
+                "but part of your answer gives advice that would break this case.")
+    if result["met"]:
+        return f"Almost there. You covered {result['met']} of {result['total']} ideas."
+    return f"Not yet. None of the {result['total']} ideas showed up in this answer yet."
+
+
 @app.post("/api/assessment/answer")
 def assessment_answer(payload: AssessmentRequest, request: Request, response: Response):
     check_origin(request)
     settings = configuration()
     identity = require_learner(request, settings)
+    rate_limit(request, "answer")
     response.headers["Cache-Control"] = "no-store"
     if not payload.answer.strip():
         raise HTTPException(422, "Write your answer to the case.")
@@ -363,25 +417,18 @@ def assessment_answer(payload: AssessmentRequest, request: Request, response: Re
     if reviewed_source(case) != challenge["source"]:
         raise HTTPException(503, "The case source changed. No grade has been assigned.")
     gap_id = challenge["gap_id"]
-    if gap_id is not None:
-        original = owned_gap(settings, identity, gap_id)
-        originals = database(settings, "GET", "cases", params={
-            "case_id": "eq." + str(original["case_id"]), "select": "idea_id", "limit": "1",
-        })
-        if original["case_id"] == case["case_id"] or not originals or originals[0]["idea_id"] != case["idea_id"]:
-            raise HTTPException(422, "The case must be a different case for the gap's concept.")
-    seen = database(settings, "GET", "attempts", params={
-        "learner_id": "eq." + str(identity), "case_id": "eq." + str(case["case_id"]),
-        "passed": "not.is.null", "select": "id", "limit": "1",
-    })
-    if seen:
+    if gap_id is not None and owned_gap(settings, identity, gap_id)["idea_id"] != case["idea_id"]:
+        raise HTTPException(422, "The case must belong to the gap's concept.")
+    if case["case_id"] in graded_case_ids(settings, identity):
         raise HTTPException(409, "This case has already been answered. Request another unseen case.")
-    # This guards sequential replay. Cross-instance atomic reservation needs DB support.
-    result = verify(case, payload.answer)
+    result = verify(case, payload.answer, quote_finder=lambda ideas: find_quotes(
+        settings, case["case_question"], ideas, payload.answer))
+    # The unique index on (learner_id, case_id) for graded rows blocks simultaneous duplicates.
     saved = database(settings, "POST", "attempts", data={
-        "learner_id": identity, "case_id": case["case_id"], "gap_id": gap_id,
-        "learner_response": payload.answer, "passed": result["status"] == "PASS",
+        "learner_id": identity, "case_id": case["case_id"], "idea_id": case["idea_id"],
+        "event_type": "graded", "gap_id": gap_id, "learner_response": payload.answer,
+        "passed": result["status"] == "PASS", "rule_version": result["rule_version"],
+        "source_fingerprint": result["source_fingerprint"],
     })
     return {**result, "attempt_id": saved[0]["id"], "gap_id": gap_id,
-            "message": "PASS — the documented case checks were met." if result["status"] == "PASS" else
-            "WRONG — the documented checks were not all met, or the answer contained conflicting advice."}
+            "message": result_message(result)}

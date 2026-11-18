@@ -8,6 +8,9 @@ const ideas = [
   ['FOREIGN_KEY_MANY_SIDE', 'Why is the foreign key on the many side?', 'Connect the dots'],
   ['EVENT_ROWS', 'Why is each attempt a separate row?', 'A history worth keeping'],
   ['DATA_LOCATION', 'Where should each piece of data live?', 'Everything in its place'],
+  ['HTTP_RESPONSE', 'How does an API tell the client what happened?', 'Did it work?'],
+  ['REFERENTIAL_INTEGRITY', 'How does the database stop broken links?', 'No orphans'],
+  ['RETRY_GAP', 'Why should a retry point to its gap?', 'Close the gap'],
 ];
 const $ = id => document.getElementById(id);
 const state = { idea: 'API_AUTH', gap: null, busy: false, attempts: [], export: [], ready: false,
@@ -151,7 +154,7 @@ function selectIdea(id, restore = false) {
       }
       message('user', row.learner_response);
       if (typeof row.passed === 'boolean') {
-        message('assistant', row.passed ? 'PASS — the documented case checks were met.' : 'WRONG — the documented checks were not all met, or the answer contained conflicting advice.');
+        message('assistant', row.passed ? 'Pass. All the ideas for this case were covered.' : 'Not yet. Some ideas for this case were still missing.');
         state.gap = null;
         state.assessmentGap = null;
       } else if (row.probe) {
@@ -227,7 +230,7 @@ async function requestAssessment(gapId) {
     message('assistant', (result.phase === 'before' ? 'Before you practice, try this case:\n\n' : 'Apply your reasoning to this different case:\n\n') + result.case_question);
     $('explanation').value = '';
     $('explanation').placeholder = 'Work through this case in your own words…';
-    $('composer-hint').textContent = 'Python will apply the predefined case checks. Groq does not grade.';
+    $('composer-hint').textContent = 'Python decides the result. The AI can only point at your words.';
     $('explanation').dispatchEvent(new Event('input'));
     scrollToLatest();
   } catch (error) {
@@ -292,10 +295,13 @@ $('chat-form').addEventListener('submit', async event => {
     pending.remove();
     if (assessing) {
       state.assessment = null;
+      const right = result.checks.filter(check => check.met).map(check => '✓ ' + check.feedback);
       const missing = result.checks.filter(check => !check.met).map(check => '• ' + check.feedback);
-      if (result.contradictions.length) missing.push('• Your answer also contains conflicting advice.');
-      message('assistant', result.message + (missing.length ? '\n\n' + missing.join('\n') : '') +
-        '\n\nThis result reflects the documented text checks; they may miss valid paraphrases.');
+      if (result.contradictions.length) missing.push('• Part of your answer gives advice that would break this case.');
+      message('assistant', result.message +
+        (right.length ? '\n\nWhat you got right:\n' + right.join('\n') : '') +
+        (missing.length ? '\n\nStill missing:\n' + missing.join('\n') : '') +
+        (result.status === 'PASS' ? '' : '\n\nThe checks can miss a correct answer written in unusual words. If you think yours is right, say so to your trainer.'));
       message('assistant', assessing.phase === 'before'
         ? 'Now explain the concept in your own words. We’ll explore one follow-up before a different case.'
         : 'Your case answer and its result are saved. You can explore another concept.');

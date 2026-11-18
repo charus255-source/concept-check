@@ -1,5 +1,12 @@
 # Deterministic verification implementation
 
+> **Updated for rules 1.1.0.** WRONG is now reported as NOT_YET, with a count of
+> ideas covered. Explanations and retries are saved as their own event types with
+> no case. Graded attempts store `rule_version` and `source_fingerprint`, and a
+> unique index blocks duplicate answers (see `migrations/`). All ten concepts are
+> selectable. A model may propose quotes that Python confirms (`quotes.py`). The
+> README describes the current design; statements below about 1.0.2 are history.
+
 Implementation and regression testing use mocked providers and make no database
 writes. Publishing this implementation does not require database migrations or
 answer-key edits. The 20 exact authoritative question-answer records were fetched

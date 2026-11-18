@@ -11,11 +11,14 @@ from .normalize import unsupported_context
 G = r"(?:(?!\b(?:but|however|whereas)\b|\b(?:backend|server|browser|frontend|client|website|page)\s+(?:(?:securely|directly)\s+)?(?:makes?|calls?|stores?|keeps?|contacts?|should|must|can|will)\b)(?:\.(?=[a-z_])|[^.;!?\n])){0,90}?"
 S = r"(?:backend|back end|server)"
 B = r"(?:browser|frontend|front end|client(?:-side)?)"
-D = r"(?:database|durable storage|persistent storage)"
+D = r"(?:database|db|durable storage|persistent storage|supabase|postgres(?:ql)?)"
 A = r"(?:attempts?|responses?|events?)"
 K = r"(?:private (?:api )?key|api key|key|secret|credentials?|token)"
-SAVE = r"(?:save(?:s|d)?|store(?:s|d)?|persist(?:s|ed)?|keep(?:s)?|kept|retain(?:s|ed)?)"
+SAVE = r"(?:save(?:s|d)?|store(?:s|d)?|persist(?:s|ed)?|keep(?:s)?|kept|retain(?:s|ed)?|put(?:s)?|write(?:s)?|wrote|written)"
 ACT = lambda expression: r"\b(?P<action>" + expression + r")\b"
+LOSE = r"(?:lost|lose(?:s)?|vanish(?:es|ed)?|disappear(?:s|ed)?|wipe(?:s|d)?|clear(?:s|ed)?|reset(?:s)?|erase(?:s|d)?|gone)"
+RESTART = r"(?:refresh(?:es|ed)?|reload(?:s|ed)?|restart(?:s|ed)?)"
+TEMP = r"(?:(?:a |an |the )?(?:local |global |temporary |javascript |js |python )?variables?|(?:in-)?memory|ram|temporary state)"
 
 
 @dataclass(frozen=True)
@@ -161,6 +164,80 @@ define("followup_gap",
        rf"{ACT(r'(?:link|connect)')}{G}follow-up{G}(?:retry attempt|retry){G}(?:same |that |original )?gap",
        rf"follow-up{G}{ACT(r'(?:references|points to|links to)')}{G}(?:same |that |original )?gap")
 
+# Version 1.1.0: phrase families found by the trainer's review and learner testing.
+# Each addition is covered by a regression answer in tests/test_phrase_families.py.
+def extend(name, *patterns, negative=False):
+    start = len(PATTERNS[name])
+    PATTERNS[name] += tuple(Pattern(name + f".{start + index + 1}", re.compile(r"(?<!\w)" + pattern + r"(?!\w)", re.I), negative)
+                            for index, pattern in enumerate(patterns))
+
+
+DEVTOOLS = r"(?:dev ?tools|developer tools|devtools|page source|view source|inspect element|source code)"
+extend("browser_exposure",
+       rf"(?:visitors?|users?|anyone|customers?|people|attackers?){G}{ACT(r'(?:open|opens|see|sees|edit|edits|modify|modifies|tamper with|view|views|inspect|read|change|alter)')}{G}(?:them|it|{DEVTOOLS}|the rules|discounts?|prices?)",
+       rf"{ACT(r'(?:open|opens|opening|use|uses|using|view|views|viewing)')}\s+(?:the\s+)?(?:browser'?s?\s+)?{DEVTOOLS}")
+extend("key_extraction",
+       rf"(?:visitors?|users?|anyone|customers?|people|attackers?){G}{ACT(r'(?:see|sees|find|finds|read|reads|grab|grabs|get|gets|view|views|steal|steals)')}{G}{K}",
+       rf"{K}{G}{ACT(r'(?:steal|steals|stolen|abuse|abused|misuse|misused|reuse|reused)')}")
+extend("server_rules",
+       rf"{ACT(r'(?:put|keep|move|store|run|place|have)')}{G}(?:discount |business )?rules{G}(?:on|in|to|at){G}{S}")
+extend("rule_benefit",
+       rf"{ACT(r'(?:applied|apply|applies)')}{G}(?:the same way|same for everyone|for everyone|everywhere|consistent(?:ly)?)",
+       rf"{ACT(r'(?:update|updated|change|changed)')}{G}(?:in one place|once|centrally)",
+       rf"(?:browser|frontend|client){G}{ACT(r'cannot be')}{G}(?:authority|trusted)")
+extend("request_order",
+       rf"request{G}{ACT(r'(?:needs?|must have|should have|has)')}{G}(?:the )?(?:order (?:identifier|id|number)|4821)",
+       rf"{ACT(r'(?:get|fetch)')}\s+/orders?/4821")
+extend("request_operation",
+       rf"(?:server|backend|api){G}{ACT(r'(?:knows?|can tell|can find|finds?|looks? up)')}{G}(?:which|what|the) order",
+       rf"{ACT(r'(?:get|fetch)')}\s+/orders?/\d+")
+extend("server_key",
+       rf"{ACT(r'(?:move|moves|moved)')}{G}{K}{G}(?:to|on|in|into){G}{S}",
+       rf"{ACT(SAVE)}{G}{K}{G}(?:in|into|as) (?:an |the |a )?(?:environment variables?|env vars?|\.env|secrets? manager)")
+extend("temporary_loss",
+       rf"{TEMP}{G}{ACT(LOSE)}",
+       rf"{ACT(LOSE)}{G}(?:because|since|as){G}(?:only )?{G}(?:in|was) {TEMP}",
+       rf"{RESTART}{G}{ACT(LOSE)}",
+       rf"{TEMP}{G}{ACT(LOSE)}{G}{RESTART}")
+extend("save_durable",
+       rf"{ACT(SAVE)}\s+(?:it|them|this|everything|that)\s+(?:in|into|to|on)\s+(?:a |the |an )?{D}")
+extend("retrieve_saved",
+       rf"{ACT(r'(?:read|load|fetch|get|pull|query)')}\s+(?:it|them|this|the progress|the attempts)\s+back")
+extend("separate_entities",
+       rf"learners\s+(?:in|into)\s+(?:a |the |their own |one )?(?:learners )?table{G}attempts\s+(?:in|into)\s+(?:a |an |the |another |their own )?(?:attempts |separate )?table",
+       rf"{ACT(r'(?:make|create|use|add|have)')}\s+(?:a |an )?(?:separate |own |new )?attempts table")
+extend("each_attempt_row",
+       rf"(?:one|a|its own|a separate) (?:row|record) (?:per|for each|for every) (?:attempt|response|event)",
+       rf"(?:attempts table|table of attempts){G}(?:each|every|one) (?:row|record)")
+extend("attempt_learner",
+       rf"(?:attempts?|row|record)s?{G}{ACT(r'(?:with|has|have|carries|contains|gets|stores|includes)')}\s+(?:a |an |the )?(?:foreign key|fk|learner_id|learner id)(?: column| field)?{G}(?:learners?|learner_id|learner id)",
+       rf"(?:learner_id|learner id)(?: column| field| foreign key)?{G}{ACT(r'(?:points?|pointing|refers?|referring|references|referencing|links?|linking)')}{G}(?:the |its |their )?learners?",
+       rf"(?:each|every) attempt (?:row|record) {ACT(r'(?:has|have|carries|contains|stores|includes)')}\s+(?:a |an )?(?:learner_id|learner id)")
+extend("independent_query",
+       rf"(?:per attempt|each attempt|separate rows?|own rows?|individual rows?){G}(?:you |we |it |the team )?(?:can |could )?(?:easily |just )?{ACT(r'(?:filter|count|query|group|sort|analy[sz]e)')}")
+extend("fixed_code",
+       rf"(?:fixed (?:concept )?list|concept list|supported concepts|list of (?:supported )?concepts){G}{ACT(r'(?:hard-?coded|hard coded|kept|stored|written|be|is)')}{G}(?:code|source|constant|python|javascript|file)")
+extend("secret_location",
+       rf"(?:secrets?|credentials?|(?:private |api )?keys?|tokens?){G}{ACT(r'(?:belong|belongs|live|lives|go|goes|stay|stays|kept|stored)')}{G}(?:environment variables?|env vars?|\.env|server-side environment|server environment|secrets manager)")
+extend("loading_location",
+       rf"(?:loading (?:message|text|status|spinner)|loading){G}{ACT(r'(?:is|are|lives in|belongs in|stays in|goes in)')}{G}(?:temporary |frontend |browser |component |local |react )?(?:ui )?state")
+extend("response_status",
+       rf"{ACT(r'(?:return|returns|send|sends|respond with|responds with)')}\s+(?:an? |the )?(?:appropriate |proper |correct |http )*status(?: codes?)?")
+extend("trusted_price",
+       rf"{S}{G}{ACT(r'(?:calculate|calculates|validate|validates|recalculate|recalculates|recompute|recomputes|compute|computes|look up|looks up|decide|decides)')}{G}(?:the |final |real )?(?:price|total)")
+extend("order_729",
+       rf"/orders?/729\b",
+       rf"4821{G}to 729\b")
+extend("survive_restart",
+       rf"{TEMP}{G}{ACT(LOSE)}{G}(?:when|on|after|if){G}{RESTART}")
+extend("gap_record",
+       rf"{ACT(r'(?:create|make|add|use|have)')}\s+(?:a |an )?(?:gaps?|difficult(?:y|ies)) (?:table|record|row)")
+extend("retry_gap",
+       rf"(?:retry|retry attempt|attempt){G}{ACT(r'(?:store|stores|has|have|carries|includes|references|keeps?)')}{G}(?:the |a )?gap(?:_id| id)")
+extend("followup_gap",
+       rf"follow-up{G}{ACT(r'(?:store|stores|has|have|carries|includes|references)')}{G}(?:the |a )?gap(?:_id| id)?")
+
+
 # Recognized contradictions are independently matched, including appended bad advice.
 define("bad_key_browser",
        rf"{ACT(SAVE)}{G}{K}{G}(?:in|on|to){G}(?:browser|frontend|front end|client-side code)",
@@ -170,15 +247,22 @@ define("bad_key_browser",
        rf"{B}\s+{ACT(r'(?:call|calls)')}\s+(?:the )?(?:third-party|third party|provider)\s+api\s+(?:using|with)\s+(?:the )?{K}",
        rf"{ACT(r'call')}\s+(?:the )?(?:third-party|third party|provider)\s+api\s+from\s+(?:the )?{B}\s+(?:using|with)\s+(?:the )?{K}")
 define("bad_browser_trust",
+       rf"{ACT(r'(?:put|keep|store)')}{G}(?:discount |business )?rules{G}(?:only )?(?:in|on) (?:the )?(?:browser|frontend)(?: javascript| code)?",
+       rf"{ACT(r'(?:trust|accept|use)')}{G}(?:price|total|discount){G}(?:the )?browser sends",
        rf"{ACT(r'(?:trust|accept|use)')}{G}(?:browser-supplied|browser supplied|customer-modified){G}(?:price|total|discount)",
        rf"browser(?:-only)? (?:rules|code|price){G}{ACT(r'(?:is|are)')}{G}(?:authoritative|tamper-proof|trusted)")
 define("bad_temp",
-       rf"(?:temporary variable|in-memory state|temporary state){G}{ACT(r'(?:survive|survives|retain|retains|persist|persists)')}{G}(?:restart|refresh)",
+       rf"(?:temporary variable|in-memory state|temporary state|global variable|variable|memory){G}{ACT(r'(?:survive|survives|retain|retains|persist|persists|stays?|lasts?)')}{G}(?:{RESTART}|next day)",
+       rf"{ACT(r'(?:keep|save|store|leave)')}{G}(?:attempts|progress|answers|it|them){G}(?:in )?(?:memory|a (?:global |temporary )?variable){G}(?:so|survive|next day|there)",
+       rf"(?:temporary variable|variable|memory) (?:is|would be) (?:fine|enough|ok|okay)",
+       rf"\Ayes\b{G}(?:temporary variable|variable|memory)",
        rf"{ACT(r'(?:keep|save|store)')}{G}(?:attempts|progress|answers){G}only{G}(?:temporary variable|memory)")
 define("bad_event_cell",
+       rf"{ACT(r'keep')}\s+(?:them|it|everything|all attempts)\s+in\s+(?:one|a single) cell",
        rf"{ACT(r'(?:keep|store|save|put)')}{G}(?:all |every )?(?:attempts|responses|events){G}(?:one|single) (?:comma-separated )?cell",
        rf"{ACT(r'(?:overwrite|replace)')}{G}(?:past attempts|history){G}(?:latest|newest)")
 define("bad_fk_direction",
+       rf"{ACT(r'(?:store|put|keep|add)')}{G}(?:all |five |twelve )?attempt ids{G}(?:learner row|learner record)(?:{G}list)?",
        rf"learners\.(?:id|attempt_id)\s*(?:->|references)\s*attempts\.(?:id|learner_id)",
        rf"{ACT(r'(?:store|put|keep|add)')}{G}(?:all |five |twelve )?attempt ids{G}(?:learner row|learner record)")
 define("bad_orphan",

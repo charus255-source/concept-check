@@ -24,7 +24,7 @@ class VerificationTests(unittest.TestCase):
         for case_id in (3, 13):
             with self.subTest(case=case_id):
                 result = verify(GOLDEN_PAIRS[case_id], answer)
-                self.assertEqual(result["status"], "WRONG")
+                self.assertEqual(result["status"], "NOT_YET")
                 self.assertTrue(all(not check["met"] for check in result["checks"]))
                 # This is incomplete, not advice to expose the key.
                 self.assertEqual(result["contradictions"], [])
@@ -44,7 +44,7 @@ class VerificationTests(unittest.TestCase):
                 with self.subTest(answer=answer):
                     result = verify(GOLDEN_PAIRS[13], answer)
                     self.assertEqual(result["status"], "PASS", result)
-                    self.assertEqual(verify(GOLDEN_PAIRS[3], answer)["status"], "WRONG")
+                    self.assertEqual(verify(GOLDEN_PAIRS[3], answer)["status"], "NOT_YET")
                     exposed = "Visitors can inspect the JavaScript and copy the key. " + answer
                     self.assertEqual(verify(GOLDEN_PAIRS[3], exposed)["status"], "PASS")
                     for check in result["checks"]:
@@ -63,7 +63,7 @@ class VerificationTests(unittest.TestCase):
         for answer, missing in incomplete:
             with self.subTest(missing=missing):
                 result = verify(GOLDEN_PAIRS[13], answer)
-                self.assertEqual(result["status"], "WRONG")
+                self.assertEqual(result["status"], "NOT_YET")
                 self.assertFalse(next(c["met"] for c in result["checks"] if c["check_id"] == missing))
 
     def test_api_auth_quoted_or_hypothetical_design_is_not_an_assertion(self):
@@ -74,7 +74,7 @@ class VerificationTests(unittest.TestCase):
                        'Keep the API key exclusively server-side. ' +
                        'The third-party API is called by the backend.'):
             with self.subTest(answer=answer):
-                self.assertEqual(verify(GOLDEN_PAIRS[13], answer)["status"], "WRONG")
+                self.assertEqual(verify(GOLDEN_PAIRS[13], answer)["status"], "NOT_YET")
 
     def test_complete_api_auth_design_can_include_the_reported_browser_warning(self):
         answer = ("To prevent exposing a private API key to website visitors, you must never "
@@ -100,7 +100,7 @@ class VerificationTests(unittest.TestCase):
         ]
         for answer in answers:
             with self.subTest(answer=answer):
-                self.assertEqual(verify(GOLDEN_PAIRS[13], answer)["status"], "WRONG")
+                self.assertEqual(verify(GOLDEN_PAIRS[13], answer)["status"], "NOT_YET")
 
     def test_api_auth_complete_design_cannot_override_unsafe_key_advice(self):
         correct = ("The frontend communicates with the backend. Keep the private key on the "
@@ -112,7 +112,7 @@ class VerificationTests(unittest.TestCase):
         ):
             with self.subTest(advice=advice):
                 result = verify(GOLDEN_PAIRS[13], correct + advice)
-                self.assertEqual(result["status"], "WRONG")
+                self.assertEqual(result["status"], "NOT_YET")
                 self.assertTrue(result["contradictions"])
         for advice in (
             "Never call the third-party API from the browser using the private key.",
@@ -131,13 +131,13 @@ class VerificationTests(unittest.TestCase):
             answer = f"Change the order ID in the request to 729. Change the order ID in the request to {target}."
             with self.subTest(target=target):
                 result = verify(GOLDEN_PAIRS[12], answer)
-                self.assertEqual(result["status"], "WRONG")
+                self.assertEqual(result["status"], "NOT_YET")
                 self.assertTrue(result["contradictions"])
 
     def test_frontend_environment_key_advice_cannot_pass(self):
         answer = (GOLDEN_PAIRS[13]["case_answer"] +
                   " Also put the private key in frontend environment variables so it stays secret.")
-        self.assertEqual(verify(GOLDEN_PAIRS[13], answer)["status"], "WRONG")
+        self.assertEqual(verify(GOLDEN_PAIRS[13], answer)["status"], "NOT_YET")
 
     def test_all_twenty_authoritative_answers_pass_without_network(self):
         self.assertEqual(set(GOLDEN_PAIRS), set(range(1, 21)))
@@ -160,19 +160,19 @@ class VerificationTests(unittest.TestCase):
             with self.subTest(case=case_id):
                 answer = GOLDEN_PAIRS[case_id]["case_answer"] + " " + bad_advice
                 result = verify(GOLDEN_PAIRS[case_id], answer)
-                self.assertEqual(result["status"], "WRONG")
+                self.assertEqual(result["status"], "NOT_YET")
                 self.assertTrue(result["contradictions"], result)
 
     def test_quoted_reference_is_not_an_assertion(self):
         for case_id, case in GOLDEN_PAIRS.items():
             with self.subTest(case=case_id):
-                self.assertEqual(verify(case, '"' + case["case_answer"] + '"')["status"], "WRONG")
+                self.assertEqual(verify(case, '"' + case["case_answer"] + '"')["status"], "NOT_YET")
 
     def test_disconnected_keyword_lists_do_not_pass(self):
         answer = "backend browser code key server storage learner_id attempts learners.id gap row success database 729"
         for case_id, case in GOLDEN_PAIRS.items():
             with self.subTest(case=case_id):
-                self.assertEqual(verify(case, answer)["status"], "WRONG")
+                self.assertEqual(verify(case, answer)["status"], "NOT_YET")
 
     def test_bad_source_is_unavailable_never_wrong(self):
         for field in ("case_question", "case_answer", "idea_id"):
@@ -210,10 +210,10 @@ class VerificationTests(unittest.TestCase):
         for first, second in [(3, 13), (4, 14), (5, 15), (7, 17), (8, 18)]:
             answer = GOLDEN_PAIRS[second]["case_answer"]
             self.assertEqual(verify(GOLDEN_PAIRS[second], answer)["status"], "PASS")
-            self.assertEqual(verify(GOLDEN_PAIRS[first], answer)["status"], "WRONG")
+            self.assertEqual(verify(GOLDEN_PAIRS[first], answer)["status"], "NOT_YET")
 
     def test_numeric_target_is_exact(self):
-        self.assertEqual(verify(GOLDEN_PAIRS[12], "Change the order ID in the request to 1729.")["status"], "WRONG")
+        self.assertEqual(verify(GOLDEN_PAIRS[12], "Change the order ID in the request to 1729.")["status"], "NOT_YET")
 
     def test_negation_cannot_supply_positive_evidence(self):
         answers = {
@@ -224,7 +224,7 @@ class VerificationTests(unittest.TestCase):
         }
         for case_id, answer in answers.items():
             with self.subTest(case=case_id):
-                self.assertEqual(verify(GOLDEN_PAIRS[case_id], answer)["status"], "WRONG")
+                self.assertEqual(verify(GOLDEN_PAIRS[case_id], answer)["status"], "NOT_YET")
 
     def test_rejected_bad_advice_is_not_a_contradiction(self):
         answer = GOLDEN_PAIRS[13]["case_answer"] + " It is wrong to store the key in the browser."
@@ -256,14 +256,14 @@ class VerificationTests(unittest.TestCase):
         for case_id, answer in incomplete.items():
             with self.subTest(case=case_id):
                 result = verify(GOLDEN_PAIRS[case_id], answer)
-                self.assertEqual(result["status"], "WRONG")
+                self.assertEqual(result["status"], "NOT_YET")
                 self.assertTrue(any(not check["met"] for check in result["checks"]))
 
     def test_negated_data_placements_cannot_pass(self):
         answer = ("The concept list must not live in code. Secrets must not belong in server-side environment configuration. "
                   "Attempts must not live in durable database storage. The loading message must not live in temporary UI state.")
         result = verify(GOLDEN_PAIRS[7], answer)
-        self.assertEqual(result["status"], "WRONG")
+        self.assertEqual(result["status"], "NOT_YET")
         self.assertTrue(all(not check["met"] for check in result["checks"]))
 
     def test_whitespace_does_not_change_assessment(self):
@@ -281,7 +281,7 @@ class VerificationTests(unittest.TestCase):
                       " the browser makes the authorized API call.")
             with self.subTest(bridge=bridge):
                 result = verify(GOLDEN_PAIRS[13], answer)
-                self.assertEqual(result["status"], "WRONG")
+                self.assertEqual(result["status"], "NOT_YET")
                 self.assertFalse(result["checks"][2]["met"])
 
     def test_legacy_grading_path_returns_gone_without_database_or_model(self):

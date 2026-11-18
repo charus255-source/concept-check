@@ -18,3 +18,8 @@ docs/
 app.py
 concept-check.py
 sdk.py
+evaluation/
+scripts/
+migrations/
+requirements-dev.txt
+README.md

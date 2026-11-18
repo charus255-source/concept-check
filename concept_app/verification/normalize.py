@@ -62,4 +62,4 @@ def unsupported_context(text, match, allow_negation=False):
     action = match.start("action") if "action" in match.re.groupindex else match.start()
     before = text[max(clause_start, action - 48):action]
     before = re.sub(r"\bnot only\b", "", before)
-    return bool(re.search(r"\b(?:not|never|cannot|no need to|rather than|instead of)\s+(?:[\w'-]+\s+){0,3}$", before))
+    return bool(re.search(r"\b(?:not|never|cannot|no need to|rather than|instead of|nobody|no one)\s+(?:[\w'-]+\s+){0,3}$", before))

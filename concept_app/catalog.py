@@ -8,6 +8,9 @@ IDEAS = {
     "FOREIGN_KEY_MANY_SIDE": "Why is the foreign key on the many side?",
     "EVENT_ROWS": "Why is each attempt a separate row?",
     "DATA_LOCATION": "Where should each piece of data live?",
+    "HTTP_RESPONSE": "How does an API tell the client what happened?",
+    "REFERENTIAL_INTEGRITY": "How does the database stop broken links?",
+    "RETRY_GAP": "Why should a retry point to its gap?",
 }
 
 

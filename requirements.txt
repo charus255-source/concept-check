@@ -1,8 +1,4 @@
-fastapi
-uvicorn
-pydantic
-python-dotenv
-gradio
-requests
-groq
-supabase
+fastapi==0.163.2
+pydantic==2.13.5
+python-dotenv==1.2.3
+requests==2.34.2
