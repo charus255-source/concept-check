@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
 
 @app.get("/")
 def home():
-    return FileResponse(ROOT / "public" / "index.html")
+    # Always revalidate the page, so a deploy never mixes old HTML with new styles.
+    return FileResponse(ROOT / "public" / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/ideas")
