@@ -17,6 +17,43 @@ const state = { lastPassed: null, idea: 'API_AUTH', gap: null, busy: false, atte
   assessment: null, assessmentGap: null };
 // Plain-language words per concept, served by /api/ideas (vocabulary only, never answers).
 const words = {};
+// Short lessons per concept (the Learn part), also served by /api/ideas.
+const lessons = {};
+
+function lessonNode(id) {
+  const lesson = lessons[id];
+  const node = document.createDocumentFragment();
+  if (!lesson) {
+    node.append(element('p', 'lesson-idea', 'The lesson could not load. You can still explain the concept below.'));
+    return node;
+  }
+  const [lead, ...rest] = lesson.idea.split(/(?<=\.)\s+/);
+  node.append(element('p', 'lesson-lead', lead));
+  if (rest.length) node.append(element('p', 'lesson-idea', rest.join(' ')));
+  const card = (className, label, text) => {
+    const box = element('div', className);
+    box.append(element('div', 'label', label), element('p', '', text));
+    node.append(box);
+  };
+  card('lesson-analogy', 'Think of it like', lesson.analogy);
+  card('lesson-example', 'Example', lesson.example);
+  const trap = element('p', 'lesson-trap');
+  trap.append(element('strong', '', 'Trap. '), document.createTextNode(lesson.mistake));
+  node.append(trap);
+  return node;
+}
+
+function showIntroLesson() {
+  $('lesson').replaceChildren(lessonNode(state.idea));
+}
+
+function openLesson() {
+  $('dialog-title').textContent = ideas.find(idea => idea[0] === state.idea)[1];
+  $('dialog-lesson').replaceChildren(lessonNode(state.idea));
+  const box = wordsBox(state.idea, 'Words you’ll need');
+  if (box) $('dialog-lesson').append(box);
+  $('lesson-dialog').showModal();
+}
 
 function wordsBox(id, label) {
   if (!words[id] || !words[id].length) return null;
@@ -87,7 +124,8 @@ function showError(message) {
 }
 
 function steps(stage) {
-  ['step-explain', 'step-reflect', 'step-retry'].forEach(id => $(id).classList.toggle('done', stage === 'done'));
+  ['step-learn', 'step-explain', 'step-reflect', 'step-retry'].forEach(id => $(id).classList.toggle('done', stage === 'done'));
+  $('step-learn').classList.toggle('active', stage === 'learn');
   $('step-explain').classList.toggle('active', stage === 'explain');
   $('step-reflect').classList.toggle('active', stage === 'reflect');
   $('step-retry').classList.toggle('active', stage === 'retry');
@@ -102,11 +140,11 @@ function guide(kind) {
   const idea = ideas.find(item => item[0] === state.idea);
   const question = idea[1].charAt(0).toLowerCase() + idea[1].slice(1);
   const text = {
-    start: ['Step 1', 'Explain it in your own words below, then press Enter.', `In my own words: ${question}`],
-    explain: ['Step 1', 'Now explain the concept in your own words below, then press Enter.', `In my own words: ${question}`],
+    start: ['Step 2', 'Explain it in your own words below, then press Enter.', `In my own words: ${question}`],
+    explain: ['Step 2', 'Now explain the concept in your own words below, then press Enter.', `In my own words: ${question}`],
     reflect: ['Your turn', 'Answer the question above, then press Enter.', 'Type your answer to the question…'],
     case: ['Your turn', 'Solve the case above, then press Enter.', 'Type your answer to the case…'],
-    retry: ['Step 3', 'Ready? Your new case checks what you worked out.', 'Or explain this concept again…'],
+    retry: ['Step 4', 'Ready? Your new case checks what you worked out.', 'Or explain this concept again…'],
     done: state.lastPassed
       ? ['Well done', 'You explained it and applied it to a new case.', 'Or explain this concept again…']
       : ['Not yet', 'Compare with the model answer above, then explain it again.', 'Explain it again, in your own words…'],
@@ -128,6 +166,7 @@ function guide(kind) {
   if (kind === 'done' && !state.lastPassed) {
     // After a Not yet, the learning loop comes first: compare, then explain again.
     button('next-concept', 'Explain it again', explainAgain);
+    button('next-secondary', 'Read the lesson', openLesson);
     button('next-secondary', 'Pick another concept', pickAnother);
   } else if (kind === 'done' || kind === 'nocase') {
     button('next-concept', 'Pick another concept', pickAnother);
@@ -324,6 +363,7 @@ function selectIdea(id, restore = false, open = false) {
   $('current-concept').textContent = idea[1];
   $('intro-title').textContent = idea[1];
   showIntroWords();
+  showIntroLesson();
   document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === id));
   if (restore) {
     const rows = state.attempts.filter(row => row.idea_id === id);
@@ -357,6 +397,9 @@ function selectIdea(id, restore = false, open = false) {
     $('assessment-actions').hidden = true;
   }
   if (open) $('welcome').hidden = true;
+  // A newly opened concept starts with its lesson; the typing box waits for "I'm ready".
+  document.body.classList.toggle('learning', open && !restoredRows);
+  if (open && !restoredRows) steps('learn');
   view();
   guide(state.gap ? 'reflect' : state.assessmentGap ? 'retry' : restoredRows ? 'done' : 'start');
   updateHistory();
@@ -392,7 +435,11 @@ ideas.forEach(([id, question, title], index) => {
   const text = element('span', 'topic-text');
   text.append(element('strong', '', title), element('span', '', question));
   card.append(element('span', 'topic-number', String(index + 1).padStart(2, '0')), text, icon('chevron'));
-  card.addEventListener('click', () => { selectIdea(id, true, true); softFocus(); window.scrollTo({ top: 0 }); });
+  card.addEventListener('click', () => {
+    selectIdea(id, true, true);
+    softFocus({ preventScroll: true });
+    requestAnimationFrame(() => window.scrollTo({ top: 0 }));
+  });
   $('topic-grid').append(card);
 });
 $('current-concept').textContent = ideas.find(idea => idea[0] === state.idea)[1];
@@ -451,6 +498,16 @@ async function requestAssessment(gapId) {
 }
 
 $('baseline-case').addEventListener('click', () => { void requestAssessment(null); });
+$('ready').addEventListener('click', () => {
+  document.body.classList.remove('learning');
+  steps('explain');
+  guide('start');
+  softFocus({ preventScroll: true });
+  requestAnimationFrame(() => $('concept-intro').querySelector('.baseline').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+});
+$('lesson-button').addEventListener('click', openLesson);
+$('close-lesson').addEventListener('click', () => $('lesson-dialog').close());
+$('lesson-dialog').addEventListener('click', event => { if (event.target === $('lesson-dialog')) $('lesson-dialog').close(); });
 $('fresh-case').addEventListener('click', () => { void requestAssessment(state.assessmentGap); });
 $('dismiss-error').addEventListener('click', () => $('error').hidden = true);
 $('menu').addEventListener('click', () => {
@@ -628,6 +685,7 @@ async function refreshHistory(restore = false) {
 }
 void refreshHistory(true);
 api('/api/ideas').then(rows => {
-  for (const row of rows) words[row.id] = row.words || [];
+  for (const row of rows) { words[row.id] = row.words || []; lessons[row.id] = row.lesson; }
   showIntroWords();
+  showIntroLesson();
 }).catch(() => {});   // the words are a help; the app works without them

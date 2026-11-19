@@ -148,6 +148,30 @@ main { margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex
 .words dd { margin: -4px 0 4px; font-size: 14px; color: var(--ink-2); }
 .case-card .words { background: var(--bg); }
 
+/* Learn: the lesson that opens each concept */
+.lesson { margin-top: 6px; }
+.lesson-lead { margin: 6px 0 12px; font-size: 18px; line-height: 1.5; font-weight: 500; color: var(--ink); }
+.lesson-idea { margin: 0 0 14px; font-size: 15.5px; color: var(--ink-2); }
+.lesson-analogy, .lesson-example { margin: 0 0 12px; padding: 14px 16px; border-radius: 12px; }
+.lesson-analogy { background: var(--almost-soft); }
+.lesson-analogy .label { color: var(--almost); }
+.lesson-example { background: var(--surface); border: 1px solid var(--line); }
+.lesson-example p { font-family: var(--mono); font-size: 13.5px; }
+.lesson-analogy p, .lesson-example p { margin: 8px 0 0; font-size: 15px; }
+.lesson-trap { margin: 0 0 6px; padding: 12px 0 0; border-top: 1px solid var(--line); font-size: 15px; color: var(--ink-2); }
+.lesson-trap strong { color: var(--ink); }
+.ready-box { margin-top: 18px; padding: 16px 18px; border-radius: 14px; background: var(--ink); color: var(--bg); }
+.ready-box p { margin: 0 0 12px; font-size: 15px; }
+body:not(.learning) .ready-box { display: none; }
+body.learning .composer-dock, body.learning .concept-intro .baseline { display: none; }
+body.on-welcome #lesson-button { display: none; }
+.lesson-dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 20px 22px; border: 1px solid var(--line);
+  border-radius: 16px; background: var(--bg); color: var(--ink); box-shadow: 0 20px 60px #0004; }
+.lesson-dialog::backdrop { background: #1c1b1866; }
+.lesson-dialog h2 { margin: 8px 0 4px; font-size: 24px; letter-spacing: -.02em; }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; }
+.dialog-head .icon-button { font-size: 22px; }
+
 /* Opened concept, before the first message */
 body.on-welcome .composer-dock { display: none; }
 .concept-intro h2 { margin: 10px 0 6px; font-size: clamp(24px, 3vw, 32px); line-height: 1.15; letter-spacing: -.02em; }

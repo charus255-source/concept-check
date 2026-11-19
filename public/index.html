@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
-  <link rel="stylesheet" href="/static/styles.css?v=20">
-  <script src="/static/chat.js?v=20" defer></script>
+  <link rel="stylesheet" href="/static/styles.css?v=22">
+  <script src="/static/chat.js?v=22" defer></script>
 </head>
 <body>
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -24,6 +24,7 @@
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 19h14"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/></symbol>
   <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></symbol>
 </svg>
 
@@ -54,20 +55,22 @@
       <span class="label">100x · C8 Module 2</span>
       <strong id="current-concept">Concept practice</strong>
     </div>
+    <button class="icon-button" id="lesson-button" type="button" title="Read the lesson" aria-label="Read the lesson"><svg><use href="#i-book"/></svg></button>
     <button class="icon-button" id="export" type="button" title="Download conversation" aria-label="Download conversation"><svg><use href="#i-download"/></svg></button>
   </header>
 
   <ol class="flow" aria-label="Learning steps">
-    <li class="flow-step active" id="step-explain"><b>1</b><span>Explain it</span></li>
-    <li class="flow-step" id="step-reflect"><b>2</b><span>Answer one question</span></li>
-    <li class="flow-step" id="step-retry"><b>3</b><span>Solve a new case</span></li>
+    <li class="flow-step" id="step-learn"><b>1</b><span>Learn</span></li>
+    <li class="flow-step active" id="step-explain"><b>2</b><span>Explain it</span></li>
+    <li class="flow-step" id="step-reflect"><b>3</b><span>Answer one question</span></li>
+    <li class="flow-step" id="step-retry"><b>4</b><span>Solve a new case</span></li>
   </ol>
 
   <section class="chat-area" id="chat-area" aria-label="Concept practice">
     <div class="welcome" id="welcome">
       <span class="label">Hackathon · Concept Check</span>
-      <h1>Explain it. Then prove it.</h1>
-      <p class="intro">Pick a concept to start. You explain it in your own words, answer one question, then solve a case you have not seen. The AI only asks questions; Python checks your answer.</p>
+      <h1>Learn it. Explain it. Prove it.</h1>
+      <p class="intro">Pick a concept. Read a short lesson, explain it in your own words, answer one question about what breaks, then solve a case you have not seen. The AI only asks questions; Python checks your answer.</p>
 
       <h2 class="section-title">Choose a concept</h2>
       <div class="topic-grid" id="topic-grid"></div>
@@ -75,9 +78,14 @@
     </div>
 
     <div class="concept-intro" id="concept-intro" hidden>
-      <span class="label">You picked</span>
+      <span class="label">Learn</span>
       <h2 id="intro-title">How does an app remember?</h2>
+      <div id="lesson" class="lesson"></div>
       <div id="intro-words"></div>
+      <div class="ready-box" id="ready-box">
+        <p>Got it? Now explain it in your own words. The app will point at anything that sounds memorised.</p>
+        <button class="primary-button" id="ready" type="button">I’m ready, check my understanding →</button>
+      </div>
       <div class="baseline">
         <span><strong>Optional:</strong> answer a case first, to compare before and after.</span>
         <button class="secondary-button" id="baseline-case" type="button"><svg><use href="#i-target"/></svg>Try a case first</button>
@@ -112,5 +120,14 @@
     <p class="footer-note"><span>Enter to send · Shift + Enter for a new line</span></p>
   </div>
 </main>
+
+<dialog class="lesson-dialog" id="lesson-dialog" aria-labelledby="dialog-title">
+  <div class="dialog-head">
+    <span class="label">Lesson</span>
+    <button class="icon-button" id="close-lesson" type="button" aria-label="Close the lesson">×</button>
+  </div>
+  <h2 id="dialog-title"></h2>
+  <div id="dialog-lesson" class="lesson"></div>
+</dialog>
 </body>
 </html>

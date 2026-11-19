@@ -28,3 +28,17 @@ class WordsYouNeed(unittest.TestCase):
     def test_words_are_served_without_a_session(self):
         rows = TestClient(app).get("/api/ideas").json()
         self.assertTrue(all(row["words"] for row in rows))
+
+
+class Lessons(unittest.TestCase):
+    def test_every_concept_has_a_complete_lesson(self):
+        from concept_app.catalog import LESSONS
+        self.assertEqual(set(LESSONS), set(IDEAS))
+        for idea, lesson in LESSONS.items():
+            with self.subTest(idea=idea):
+                self.assertEqual(set(lesson), {"idea", "analogy", "example", "mistake"})
+                self.assertTrue(all(len(text) > 20 for text in lesson.values()))
+
+    def test_lessons_are_served_with_the_concepts(self):
+        rows = TestClient(app).get("/api/ideas").json()
+        self.assertTrue(all(row["lesson"]["idea"] for row in rows))

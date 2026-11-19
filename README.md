@@ -117,6 +117,14 @@ in the Supabase SQL editor **before** deploying this version. It adds `event_typ
 to attempts, backfills old rows, and adds a unique index so a learner can submit
 only one graded answer per case.
 
+## Learn, then check
+
+Each concept opens with a short lesson (`LESSONS` in `concept_app/catalog.py`): the idea,
+an everyday analogy, an example and a common trap. "I'm ready" leads into the check:
+explain in your own words, one follow-up about what breaks, then a fresh case graded by
+Python. Reading first is fine because the check is built to catch reciting. The lesson
+can be reopened from the book button in the header, or after a Not yet.
+
 ## Words you'll need
 
 Each concept and case card has a closed-by-default box that explains the curriculum words
