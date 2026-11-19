@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from concept_app.catalog import IDEAS
+from concept_app.catalog import IDEAS, WORDS
 from concept_app.config import Settings
 from concept_app.probing import ProbingUnavailable, probe
 from concept_app.catalog import public_case
@@ -39,7 +39,8 @@ def home():
 
 @app.get("/api/ideas")
 def ideas():
-    return [{"id": key, "title": value} for key, value in IDEAS.items()]
+    return [{"id": key, "title": value, "words": [{"term": term, "meaning": meaning} for term, meaning in WORDS[key]]}
+            for key, value in IDEAS.items()]
 
 
 def configuration():

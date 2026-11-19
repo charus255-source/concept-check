@@ -15,6 +15,24 @@ const ideas = [
 const $ = id => document.getElementById(id);
 const state = { lastPassed: null, idea: 'API_AUTH', gap: null, busy: false, attempts: [], export: [], ready: false,
   assessment: null, assessmentGap: null };
+// Plain-language words per concept, served by /api/ideas (vocabulary only, never answers).
+const words = {};
+
+function wordsBox(id, label) {
+  if (!words[id] || !words[id].length) return null;
+  const box = element('details', 'words');
+  box.append(element('summary', '', label));
+  const list = element('dl');
+  for (const word of words[id]) list.append(element('dt', '', word.term), element('dd', '', word.meaning));
+  box.append(list);
+  return box;
+}
+
+function showIntroWords() {
+  const box = wordsBox(state.idea, 'New to this? Words you’ll need');
+  $('intro-words').replaceChildren(...(box ? [box] : []));
+}
+
 const retryMessage = '✓ Your second try is saved. Practice is not graded: a new case will show whether it clicked.';
 
 function element(tag, className, text) {
@@ -170,6 +188,8 @@ function caseCard(phase, question) {
   const card = element('div', 'case-card');
   card.append(element('div', 'label', phase === 'before' ? 'Case · before practice' : phase === 'after' ? 'New case · after practice' : 'Case'));
   card.append(element('p', '', question));
+  const box = wordsBox(state.idea, 'Words used here');
+  if (box) card.append(box);
   return card;
 }
 
@@ -297,6 +317,7 @@ function selectIdea(id, restore = false, open = false) {
   const idea = ideas.find(item => item[0] === id);
   $('current-concept').textContent = idea[1];
   $('intro-title').textContent = idea[1];
+  showIntroWords();
   document.querySelectorAll('.topic-card').forEach(card => card.classList.toggle('selected', card.dataset.idea === id));
   if (restore) {
     const rows = state.attempts.filter(row => row.idea_id === id);
@@ -600,3 +621,7 @@ async function refreshHistory(restore = false) {
   }
 }
 void refreshHistory(true);
+api('/api/ideas').then(rows => {
+  for (const row of rows) words[row.id] = row.words || [];
+  showIntroWords();
+}).catch(() => {});   // the words are a help; the app works without them

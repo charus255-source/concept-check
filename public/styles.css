@@ -140,6 +140,14 @@ main { margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex
 .secondary-button:hover { border-color: var(--ink); }
 .secondary-button svg, .primary-button svg { width: 18px; height: 18px; }
 
+/* Words you'll need: vocabulary for learners new to the curriculum */
+.words { margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.words summary { cursor: pointer; padding: 9px 14px; font-weight: 600; font-size: 14px; color: var(--accent-ink); }
+.words dl { margin: 0; padding: 0 14px 12px; display: grid; gap: 6px; }
+.words dt { font-weight: 600; font-size: 14px; }
+.words dd { margin: -4px 0 4px; font-size: 14px; color: var(--ink-2); }
+.case-card .words { background: var(--bg); }
+
 /* Opened concept, before the first message */
 body.on-welcome .composer-dock { display: none; }
 .concept-intro h2 { margin: 10px 0 6px; font-size: clamp(24px, 3vw, 32px); line-height: 1.15; letter-spacing: -.02em; }

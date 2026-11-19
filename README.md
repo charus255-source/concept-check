@@ -117,6 +117,14 @@ in the Supabase SQL editor **before** deploying this version. It adds `event_typ
 to attempts, backfills old rows, and adds a unique index so a learner can submit
 only one graded answer per case.
 
+## Words you'll need
+
+Each concept and case card has a closed-by-default box that explains the curriculum words
+(attempt, row, foreign key, gap...) in plain language, so learners outside the course are
+not failed by vocabulary. The lists live in `concept_app/catalog.py` (`WORDS`). They explain
+what words mean, never why or how: `tests/test_words.py` checks that no list meets any
+graded idea, and each definition was also read for hints a phrase check cannot see.
+
 ## Privacy
 
 Learners get a random label, never a name. The shared view shows explanations,
