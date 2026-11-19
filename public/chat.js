@@ -184,6 +184,7 @@ function view() {
   const onWelcome = !$('welcome').hidden;
   document.body.classList.toggle('on-welcome', onWelcome);
   if (onWelcome) document.querySelectorAll('.topic-card.selected').forEach(card => card.classList.remove('selected'));
+  if (onWelcome) steps('learn');   // the start screen is the beginning: step 1
   $('current-concept').textContent = onWelcome ? 'Choose a concept'
     : ideas.find(idea => idea[0] === state.idea)[1];
   $('concept-intro').hidden = onWelcome || $('messages').children.length > 0;

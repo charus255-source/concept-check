@@ -276,7 +276,7 @@ def check_explanation(payload: ExplanationRequest, request: Request, response: R
     if len(explanation) < 10:
         raise HTTPException(422, "Write at least 10 characters in your own words.")
     if payload.idea_id not in IDEAS:
-        raise HTTPException(422, "Choose a Module 2 concept.")
+        raise HTTPException(422, "Choose a concept.")
     rate_limit(request, "check")
     if payload.gap_id is not None:
         original = owned_gap(settings, identity, payload.gap_id)
@@ -392,7 +392,7 @@ def assessment_case(payload: CaseRequest, request: Request, response: Response):
     rate_limit(request, "case")
     response.headers["Cache-Control"] = "no-store"
     if payload.idea_id not in IDEAS:
-        raise HTTPException(422, "Choose a Module 2 concept.")
+        raise HTTPException(422, "Choose a concept.")
     cases = database(settings, "GET", "cases", params={
         "idea_id": "eq." + payload.idea_id, "select": SOURCE_FIELDS, "order": "case_id.asc",
     })
