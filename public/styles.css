@@ -186,7 +186,7 @@ body.on-welcome .composer-dock { display: none; }
 .case-card p { margin: 10px 0 0; font-size: 16px; font-weight: 500; white-space: pre-wrap; }
 .result-card { border-radius: 14px; border: 1px solid var(--line); background: var(--surface); overflow: hidden; box-shadow: var(--shadow); }
 .result-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; }
-.result-badge { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 7px 10px; border-radius: 99px; }
+.result-badge { white-space: nowrap; flex-shrink: 0; font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 7px 10px; border-radius: 99px; }
 .result-title { font-weight: 600; }
 .result-card.pass .result-head { background: var(--pass-soft); }
 .result-card.pass .result-badge { background: var(--pass); color: var(--surface); }
@@ -215,12 +215,13 @@ body.on-welcome .composer-dock { display: none; }
 .assessment-actions span { font-size: 13.5px; color: var(--muted); }
 
 /* Composer */
-.next-concept { display: block; margin-top: 10px; width: 100%; padding: 10px 14px; border: 0; border-radius: 10px;
-  background: var(--accent); color: #fff; font-weight: 600; font-size: 15px; }
+.next-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.next-concept, .next-secondary { padding: 8px 14px; border-radius: 9px; font-weight: 600; font-size: 14px; }
+.next-concept { border: 0; background: var(--accent); color: #fff; }
 .next-concept:hover { background: var(--accent-ink); }
-.next-link { display: block; margin: 8px auto 0; border: 0; background: transparent; color: inherit; opacity: .8;
-  font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
-.next-link:hover { opacity: 1; }
+.next-secondary { border: 1px solid color-mix(in srgb, var(--bg) 40%, transparent); background: transparent; color: var(--bg); }
+.next-secondary:hover { border-color: var(--bg); }
+body.composer-off .composer, body.composer-off .footer-note { display: none; }
 .next-step { margin: 0 0 8px; padding: 10px 14px; border-radius: 12px; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 500; }
 .next-step b { display: inline-block; margin-right: 10px; padding: 3px 8px; border-radius: 6px; background: var(--accent); color: #fff;
   font: 600 11px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; vertical-align: 1px; }

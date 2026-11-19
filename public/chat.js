@@ -108,35 +108,34 @@ function guide(kind) {
     case: ['Your turn', 'Solve the case above, then press Enter.', 'Type your answer to the case…'],
     retry: ['Step 3', 'Ready? Your new case checks what you worked out.', 'Or explain this concept again…'],
     done: state.lastPassed
-      ? ['Well done', 'You explained it and applied it to a new case. Your result is saved.', 'Or explain this concept again…']
-      : ['Not yet', 'That is how learning starts. Open the model answer above, compare it with yours, then explain it again in your own words.', 'Explain it again, in your own words…'],
-    nocase: ['Practice saved', 'You have used all the cases for this concept. You can still explain it again below for practice.', 'Explain it again, in your own words…'],
+      ? ['Well done', 'You explained it and applied it to a new case.', 'Or explain this concept again…']
+      : ['Not yet', 'Compare with the model answer above, then explain it again.', 'Explain it again, in your own words…'],
+    nocase: ['Practice saved', 'You have used all the cases for this concept.', 'Explain it again, in your own words…'],
   }[kind];
   if (kind === 'done') steps('done');
-  $('next-step').replaceChildren(element('b', '', text[0]), document.createTextNode(text[1]));
-  if (kind === 'retry') {
-    const next = element('button', 'next-concept', 'Next: try a new case →');
-    next.type = 'button';
-    next.addEventListener('click', () => { void requestAssessment(state.assessmentGap); });
-    $('next-step').append(next);
-  }
-  const pickAnother = (className, label) => {
-    // Visible on phones too, where "New conversation" sits inside the menu.
-    const next = element('button', className, label);
-    next.type = 'button';
-    next.addEventListener('click', () => $('new-chat').click());
-    $('next-step').append(next);
+  $('next-step').replaceChildren(element('b', '', text[0]), element('span', 'next-text', text[1]));
+  const actions = element('div', 'next-actions');
+  const button = (className, label, onClick) => {
+    const item = element('button', className, label);
+    item.type = 'button';
+    item.addEventListener('click', onClick);
+    actions.append(item);
   };
+  const explainAgain = () => { document.body.classList.remove('composer-off'); steps('explain'); guide('explain'); $('explanation').focus(); };
+  // "Pick another concept" is in the bar because on phones "New conversation" sits inside the menu.
+  const pickAnother = () => $('new-chat').click();
+  if (kind === 'retry') button('next-concept', 'Next: try a new case →', () => { void requestAssessment(state.assessmentGap); });
   if (kind === 'done' && !state.lastPassed) {
     // After a Not yet, the learning loop comes first: compare, then explain again.
-    const again = element('button', 'next-concept', 'Explain it again →');
-    again.type = 'button';
-    again.addEventListener('click', () => { steps('explain'); guide('explain'); $('explanation').focus(); });
-    $('next-step').append(again);
-    pickAnother('next-link', 'or pick another concept');
+    button('next-concept', 'Explain it again', explainAgain);
+    button('next-secondary', 'Pick another concept', pickAnother);
   } else if (kind === 'done' || kind === 'nocase') {
-    pickAnother('next-concept', 'Pick another concept →');
+    button('next-concept', 'Pick another concept', pickAnother);
+    button('next-secondary', 'Explain it again', explainAgain);
   }
+  if (actions.children.length) $('next-step').append(actions);
+  // After a result the typing box waits until the learner chooses to explain again.
+  document.body.classList.toggle('composer-off', kind === 'done' || kind === 'nocase');
   $('explanation').placeholder = text[2];
   $('chat-form').classList.toggle('in-conversation', kind !== 'start');
 }
@@ -223,6 +222,13 @@ function resultCard(result) {
   if (result.model_answer) {
     // Shown only after grading: this case is never reused, so the answer cannot leak a test.
     const model = element('details', 'model-answer');
+    model.addEventListener('toggle', () => {
+      if (!model.open) return;
+      requestAnimationFrame(() => {
+        const overlap = model.getBoundingClientRect().bottom - document.querySelector('.composer-dock').getBoundingClientRect().top + 16;
+        if (overlap > 0) window.scrollBy({ top: overlap, behavior: 'smooth' });
+      });
+    });
     model.append(element('summary', '', result.status === 'PASS' ? 'Compare with a model answer' : 'Show a model answer'));
     model.append(element('p', '', result.model_answer));
     if (result.status !== 'PASS') model.append(element('p', 'model-tip', 'Compare it with your answer: which idea in it did you leave out?'));
