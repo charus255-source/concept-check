@@ -117,6 +117,19 @@ in the Supabase SQL editor **before** deploying this version. It adds `event_typ
 to attempts, backfills old rows, and adds a unique index so a learner can submit
 only one graded answer per case.
 
+## Design notes
+
+The app started on paper. My handwritten notes are in `public/notes/`, and the app shows
+them at `/how` ("How I built this") next to what each idea became.
+
+| Who does what | What gets stored |
+|---|---|
+| ![Hand-drawn architecture: browser to backend (the API key stays there) to LLM, which checks the recited sentence and writes a follow-up; database keeps learner history. No-go: the LLM deciding on its own that the learner understands.](public/notes/architecture-sketch.jpg) | ![Handwritten table design: learner, idea, golden_pairs, recital_sentence and attempts.](public/notes/data-design-sketch.jpg) |
+
+From paper to app: `golden_pairs` became `cases`; `recital_sentence` became `gaps` (the
+follow-up), with the recited sentence saved on the attempt; `idea` became the fixed concept
+list in code; `attempt_type` became `event_type`, and each grade also stores its rule version.
+
 ## Learn, then check
 
 Each concept opens with a short lesson (`LESSONS` in `concept_app/catalog.py`): the idea,

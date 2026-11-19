@@ -42,3 +42,13 @@ class Lessons(unittest.TestCase):
     def test_lessons_are_served_with_the_concepts(self):
         rows = TestClient(app).get("/api/ideas").json()
         self.assertTrue(all(row["lesson"]["idea"] for row in rows))
+
+
+class HowIBuiltThis(unittest.TestCase):
+    def test_page_and_sketches_are_served(self):
+        client = TestClient(app)
+        self.assertIn("How I built this", client.get("/how").text)
+        for name in ("architecture-sketch.jpg", "data-design-sketch.jpg"):
+            response = client.get("/static/notes/" + name)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.headers["content-type"], "image/jpeg")

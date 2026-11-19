@@ -37,6 +37,11 @@ def home():
     return FileResponse(ROOT / "public" / "index.html", headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/how")
+def how_i_built_this():
+    return FileResponse(ROOT / "public" / "how.html", headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/api/ideas")
 def ideas():
     return [{"id": key, "title": value, "lesson": LESSONS[key],
